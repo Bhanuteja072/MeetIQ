@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from backend.databases.mongo import connect_db, close_db,get_db
-from backend.routers import meetings, transcription
+from backend.routers import meetings, transcription, analysis
 import logging
 logging.basicConfig(level=logging.INFO)
 
@@ -33,6 +33,7 @@ app.add_middleware(
 # Register routers
 app.include_router(meetings.router)
 app.include_router(transcription.router)
+app.include_router(analysis.router)
 
 @app.get("/")
 async def root():
@@ -43,6 +44,7 @@ async def root():
 
 @app.get("/health")
 async def health():
+        
         db = get_db()
         if db is None:
             return {"status": "unhealthy", "db": "disconnected"}
