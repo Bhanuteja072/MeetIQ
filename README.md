@@ -7,6 +7,9 @@ AI-powered meeting transcription and speaker diarization API built with FastAPI.
 - Whisper-based speech-to-text with timestamps
 - Pyannote-based speaker diarization
 - Speaker summaries and transcript merging
+- Multi-agent meeting analysis (summary, action items, decisions, blockers)
+- Semantic RAG search across meetings and within a single meeting
+- FAISS vector store with SentenceTransformers embeddings
 - MongoDB persistence for meetings
 - REST API with Swagger UI
 
@@ -16,6 +19,9 @@ AI-powered meeting transcription and speaker diarization API built with FastAPI.
 - Whisper (OpenAI)
 - Pyannote (speaker diarization)
 - MoviePy (extract audio from MP4)
+- LangGraph (multi-agent analysis pipeline)
+- LangChain + Groq (LLM-powered analysis and RAG answers)
+- SentenceTransformers + FAISS (embeddings + vector search)
 
 ### Project Structure
 ```
@@ -25,12 +31,31 @@ backend/
 	routers/
 		meetings.py
 		transcription.py
+		analysis.py
+		search.py
 	services/
 		whisper_service.py
 		speaker_service.py
 		file_service.py
+		agents/
+			action_item_agent.py
+			blocker_agent.py
+			decision_agent.py
+			summary_agent.py
+		graph/
+			pipeline.py
+			state.py
+		rag/
+			embeddings.py
+			search.py
 	databases/
 		mongo.py
+	models/
+		meeting.py
+		report.py
+	utils/
+		helpers.py
+faiss_store/
 uploads/
 ```
 
@@ -47,8 +72,9 @@ uploads/
 MONGO_URL=mongodb://localhost:27017
 DATABASE_NAME=Meeting_Partner
 HUGGINGFACE_TOKEN=your_hf_token_here
+GROQ_API_KEY=your_groq_api_key_here
 UPLOAD_DIR=uploads
-MAX_FILE_SIZE_MB=100
+MAX_FILE_SIZE_MB=200
 ```
 
 ### Run the API
@@ -77,6 +103,16 @@ http://127.0.0.1:8000/docs
 
 Note: MP4 files must include an audio track.
 
+#### Analysis (optional)
+1. Trigger analysis for a completed meeting.
+2. Multi-agent pipeline generates a structured report.
+3. Report is saved to MongoDB and embedded into FAISS for search.
+
+#### RAG Search
+1. Query embeds into vectors.
+2. FAISS retrieves relevant meeting chunks.
+3. Groq LLM generates an answer using the retrieved context.
+
 ### API Endpoints
 #### Transcription
 - `POST /transcription/upload-audio`
@@ -96,6 +132,24 @@ Note: MP4 files must include an audio track.
 - `DELETE /meetings/{meeting_id}`
 	- Delete a meeting.
 
+#### Analysis
+- `POST /analysis/{meeting_id}/analyze`
+	- Run the analysis pipeline in the background.
+- `GET /analysis/{meeting_id}/report`
+	- Fetch report or analysis status.
+
+#### Search
+- `POST /search/`
+	- Semantic search across all meetings (optional `meeting_id`).
+- `GET /search/meetings/{meeting_id}/search?q=...`
+	- Search within a single meeting.
+
+#### Health
+- `GET /health`
+	- Service and database status.
+- `GET /`
+	- Root message + docs link.
+
 ### Example: Upload Audio
 ```bash
 curl -X POST "http://127.0.0.1:8000/transcription/upload-audio?title=MyMeet" \
@@ -106,6 +160,8 @@ curl -X POST "http://127.0.0.1:8000/transcription/upload-audio?title=MyMeet" \
 - Whisper and Pyannote models load once per server process and are reused for later requests.
 - First request may take longer due to model download and initialization.
 - MP4 uploads trigger audio extraction via MoviePy.
+- Analysis and search require `GROQ_API_KEY`.
+- FAISS index is stored in `faiss_store/` and rebuilt when meetings are re-embedded.
 
 ### Troubleshooting
 - If diarization fails, confirm `HUGGINGFACE_TOKEN` is set and has access.
