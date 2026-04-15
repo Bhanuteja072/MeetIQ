@@ -20,3 +20,7 @@ langchain==1.2.15
 langgraph==1.1.6
 langchain-groq==1.1.2
 groq==0.37.1
+faiss-cpu==1.13.2
+sentence-transformers==2.7.0
+transformers==4.40.2
+langchain-community==0.4.1
