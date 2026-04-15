@@ -1,5 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from backend.databases.mongo import get_db
+from backend.services.rag.embeddings import remove_meeting_from_index
+
 
 router = APIRouter(prefix="/meetings", tags=["Meetings"])
 
@@ -85,5 +87,6 @@ async def delete_meeting(meeting_id: str):
     
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Meeting not found")
-    
+    # Remove from FAISS index too
+    remove_meeting_from_index(meeting_id)
     return {"message": "Meeting deleted successfully"}
