@@ -2,6 +2,7 @@ import logging
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 from backend.databases.mongo import get_db
 from backend.services.graph.pipeline import run_analysis_pipeline
+from backend.services.rag.embeddings import embed_meeting
 from datetime import datetime
 
 router = APIRouter(prefix="/analysis", tags=["Analysis"])
@@ -122,6 +123,16 @@ async def _run_analysis_background(
                 "analyzed_at": datetime.utcnow()
             }}
         )
+        try:
+            meeting_doc = await db.meetings.find_one({"_id": meeting_id})
+            embed_meeting(
+                meeting_id=meeting_id,
+                transcript=transcript,
+                report=report,
+                meeting_title=meeting_doc.get("title", ""),
+            )
+        except Exception as embed_err:
+            logger.warning("Embedding failed for meeting %s: %s", meeting_id, embed_err)
         logger.info("Analysis complete for meeting %s", meeting_id)
 
     except Exception as e:
