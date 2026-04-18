@@ -61,10 +61,15 @@ async def search_within_meeting(
     Search within a single specific meeting.
     Convenience endpoint for the meeting detail page.
     """
-    if not q.strip():
+    q = q.strip()
+    meeting_id = meeting_id.strip()
+
+    if not q:
         raise HTTPException(status_code=400, detail="Query cannot be empty")
     if len(q) > 500:
         raise HTTPException(status_code=400, detail="Query too long (max 500 chars)")
+    if not meeting_id:
+        raise HTTPException(status_code=400, detail="Meeting ID cannot be empty")
 
     db = get_db()
 
