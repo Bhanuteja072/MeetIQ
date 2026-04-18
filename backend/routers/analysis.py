@@ -1,6 +1,7 @@
 import logging
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 from backend.databases.mongo import get_db
+from backend.models.report import MeetingReport
 from backend.services.graph.pipeline import run_analysis_pipeline
 from backend.services.rag.embeddings import embed_meeting
 from datetime import datetime
@@ -96,11 +97,12 @@ async def get_report(meeting_id: str):
         }
 
     # Return the full report
-    report = meeting.get("report", {})
-    return {
+    raw_report = meeting.get("report", {})
+    # Strip fields not in MeetingReport before validating
+    return{
         "meeting_id": meeting_id,
         "analysis_status": "completed",
-        "report": report
+        "report": raw_report
     }
 
 
