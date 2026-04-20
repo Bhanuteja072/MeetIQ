@@ -305,6 +305,6 @@ Current frontend validation blocks files larger than 50MB in Upload page, while 
 - Analysis and transcription run in background tasks; frontend uses polling for status updates.
 - CORS is enabled for localhost:3000 and localhost:5173.
 
-## License
+<!-- ## License
 
-Add your license information here.
+Add your license information here. -->
