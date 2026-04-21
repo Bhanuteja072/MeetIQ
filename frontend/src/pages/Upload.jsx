@@ -29,7 +29,7 @@ export default function Upload() {
   const handleSubmit = async () => {
     if (!file) return toast.error('Please select a file')
     if (!title.trim()) return toast.error('Please enter a title')
-    if (file.size > 50 * 1024 * 1024) {
+    if (file.size > 100 * 1024 * 1024) {
     return toast.error('File too large (max 50MB)')
     }
 
