@@ -10,6 +10,10 @@ async def connect_db() -> None:
     try:
         client = AsyncIOMotorClient(settings.mongodb_url)
         db = client[settings.database_name]
+        # Ensure unique index on email — prevents race condition duplicates
+        await db.users.create_index("email", unique=True)
+        # Speed up per-user meeting queries
+        await db.meetings.create_index("user_id")
         print(f"✅ Connected to MongoDB: {settings.database_name}")
     except Exception as e:
         raise RuntimeError(f"MongoDB connection failed: {e}")
