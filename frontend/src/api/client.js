@@ -5,6 +5,37 @@ const api = axios.create({
   timeout: 30000,
 })
 
+// ── Interceptor: attach JWT to every request ──────────────
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('meetiq_token')
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
+
+// ── Interceptor: handle 401 globally ─────────────────────
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Token expired or invalid — clear and redirect to login
+      localStorage.removeItem('meetiq_token')
+      localStorage.removeItem('meetiq_user')
+      window.location.href = '/login'
+    }
+    return Promise.reject(error)
+  }
+)
+
+// ── Auth ──────────────────────────────────────────────────
+export const registerUser = (data) =>
+  api.post('/auth/register', data).then(r => r.data)
+
+export const loginUser = (data) =>
+  api.post('/auth/login', data).then(r => r.data)
+
+
 // ── Meetings ──────────────────────────────────────────────
 export const getAllMeetings = () =>
   api.get('/meetings/').then(r => r.data)
