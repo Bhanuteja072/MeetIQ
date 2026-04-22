@@ -1,5 +1,6 @@
 import logging
-from fastapi import APIRouter, HTTPException, BackgroundTasks
+from fastapi import APIRouter, HTTPException, BackgroundTasks, Depends
+from backend.dependencies.auth import get_current_user
 from backend.databases.mongo import get_db
 from backend.models.report import MeetingReport
 from backend.services.graph.pipeline import run_analysis_pipeline
@@ -18,14 +19,14 @@ def _get_db_or_raise():
 
 
 @router.post("/{meeting_id}/analyze")
-async def trigger_analysis(meeting_id: str, background_tasks: BackgroundTasks):
+async def trigger_analysis(meeting_id: str, background_tasks: BackgroundTasks, current_user: dict = Depends(get_current_user)):
     """
     Trigger the 4-agent LangGraph analysis pipeline for a meeting.
     Meeting must already be transcribed (status = completed).
     Runs in background — use GET /analysis/{meeting_id}/report to fetch results.
     """
     db = _get_db_or_raise()
-    meeting = await db.meetings.find_one({"_id": meeting_id})
+    meeting = await db.meetings.find_one({"_id": meeting_id, "user_id": current_user["_id"]})
 
     if not meeting:
         raise HTTPException(status_code=404, detail="Meeting not found")
@@ -52,7 +53,8 @@ async def trigger_analysis(meeting_id: str, background_tasks: BackgroundTasks):
         _run_analysis_background,
         meeting_id,
         meeting["transcript"],
-        meeting.get("speakers", [])
+        meeting.get("speakers", []),
+        current_user["_id"]
     )
 
     return {
@@ -63,13 +65,13 @@ async def trigger_analysis(meeting_id: str, background_tasks: BackgroundTasks):
 
 
 @router.get("/{meeting_id}/report")
-async def get_report(meeting_id: str):
+async def get_report(meeting_id: str, current_user: dict = Depends(get_current_user)):
     """
     Fetch the analysis report for a meeting.
     Returns the report if ready, or current status if still processing.
     """
     db = _get_db_or_raise()
-    meeting = await db.meetings.find_one({"_id": meeting_id})
+    meeting = await db.meetings.find_one({"_id": meeting_id, "user_id": current_user["_id"]})
 
     if not meeting:
         raise HTTPException(status_code=404, detail="Meeting not found")
@@ -110,6 +112,7 @@ async def _run_analysis_background(
     meeting_id: str,
     transcript: list,
     speakers: list,
+    user_id: str = "", 
 ):
     """Background task that runs the LangGraph pipeline and saves report to MongoDB."""
     db = _get_db_or_raise()
@@ -132,6 +135,7 @@ async def _run_analysis_background(
                 transcript=transcript,
                 report=report,
                 meeting_title=meeting_doc.get("title", ""),
+                user_id=user_id, 
             )
         except Exception as embed_err:
             logger.warning("Embedding failed for meeting %s: %s", meeting_id, embed_err)
