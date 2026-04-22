@@ -15,10 +15,13 @@ LangGraph pipeline, FAISS-powered RAG search, and a React frontend.
 > **Live Demo:** Coming soon
 
 ---
-**Upload Image :**
+**Upload Page :**
 ![Upload Page](assets/screenshots/upload.png)
+**Search Page:**
 ![Upload Page](assets/screenshots/search.png)
+**Meeting Page**
 ![Upload Page](assets/screenshots/report.png)
+**Agent outputs**
 ![Upload Page](assets/screenshots/Agents.png)
 
 
