@@ -10,7 +10,9 @@ logger = logging.getLogger(__name__)
 
 
 # ── Constants ──────────────────────────────────────────────
-FAISS_DIR = "faiss_store"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+FAISS_DIR = os.path.join(BASE_DIR, "..", "..", "faiss_store")
+FAISS_DIR = os.path.normpath(FAISS_DIR)
 INDEX_FILE = os.path.join(FAISS_DIR, "meetings.index")
 METADATA_FILE = os.path.join(FAISS_DIR, "metadata.json")
 EMBED_MODEL = "all-MiniLM-L6-v2"
