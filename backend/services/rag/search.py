@@ -19,7 +19,7 @@ TOP_K = 5  # Number of chunks to retrieve per query
 
 # ── Retrieval ──────────────────────────────────────────────
 
-def retrieve_relevant_chunks(query: str, meeting_id: str = None, top_k: int = TOP_K):
+def retrieve_relevant_chunks(query: str, meeting_id: str = None, user_id: str = None, top_k: int = TOP_K):
     """
     Embed the query and find the top_k most similar chunks in FAISS.
 
@@ -53,7 +53,7 @@ def retrieve_relevant_chunks(query: str, meeting_id: str = None, top_k: int = TO
     query_embedding = np.array(query_embedding, dtype=np.float32)
 
     # Search FAISS
-    distances, indices = index.search(query_embedding, min(top_k * 3, index.ntotal))
+    distances, indices = index.search(query_embedding, min(top_k * 10, index.ntotal))
 
     # Filter by meeting_id if specified, then take top_k
     results = []
@@ -62,6 +62,9 @@ def retrieve_relevant_chunks(query: str, meeting_id: str = None, top_k: int = TO
             continue
         chunk_meta = metadata[idx].copy()
         chunk_meta["score"] = float(dist)
+        if user_id and chunk_meta.get("user_id") and chunk_meta["user_id"] != user_id:
+            continue
+
 
         if meeting_id and chunk_meta["meeting_id"] != meeting_id:
             continue
@@ -91,7 +94,7 @@ USER QUESTION:
 Answer clearly and concisely:"""
 
 
-def answer_query(query: str, meeting_id: str = None) -> dict:
+def answer_query(query: str, meeting_id: str = None, user_id: str = None) -> dict:
     """
     Full RAG pipeline:
     1. Retrieve relevant chunks from FAISS
@@ -116,7 +119,7 @@ def answer_query(query: str, meeting_id: str = None) -> dict:
         "sources": [],
         "chunks_used": 0
         }
-    chunks = retrieve_relevant_chunks(query, meeting_id=meeting_id)
+    chunks = retrieve_relevant_chunks(query, meeting_id=meeting_id,user_id=user_id)
 
     if not chunks:
         return {
