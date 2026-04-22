@@ -119,6 +119,7 @@ def embed_meeting(
     transcript: List[Dict],
     report: Dict,
     meeting_title: str = "",
+    user_id: str = "",
 ) -> int:
     """
     Embed a meeting's transcript + report into the FAISS index.
@@ -178,6 +179,7 @@ def embed_meeting(
                 "meeting_id": meeting_id,
                 "meeting_title": meeting_title,
                 "chunk_index": i,
+                "user_id": user_id,
                 "text": chunk,
             })
 
