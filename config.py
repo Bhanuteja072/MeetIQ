@@ -11,6 +11,9 @@ class Settings(BaseSettings):
     groq_api_key: str = Field("", validation_alias="GROQ_API_KEY")
     upload_dir: str = Field("uploads", validation_alias="UPLOAD_DIR")
     max_file_size_mb: int = Field(200, validation_alias="MAX_FILE_SIZE_MB")
+    jwt_secret: str = Field("", validation_alias="JWT_SECRET")
+    jwt_algorithm: str = Field("HS256", validation_alias="JWT_ALGORITHM")
+    jwt_expire_minutes: int = Field(4320, validation_alias="JWT_EXPIRE_MINUTES")  # 3 days
 settings = Settings()
 
 # Create upload directory if it doesn't exist
