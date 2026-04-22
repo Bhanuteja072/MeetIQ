@@ -1,7 +1,8 @@
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
+from backend.dependencies.auth import get_current_user
 from pydantic import BaseModel
 from backend.services.rag.search import answer_query
 from backend.databases.mongo import get_db
@@ -16,7 +17,7 @@ class SearchRequest(BaseModel):
 
 
 @router.post("/")
-async def search_meetings(request: SearchRequest):
+async def search_meetings(request: SearchRequest, current_user: dict = Depends(get_current_user)):
     """
     Natural language search across all meeting records.
 
@@ -38,6 +39,7 @@ async def search_meetings(request: SearchRequest):
         result = answer_query(
             query=request.query,
             meeting_id=request.meeting_id,
+            user_id=current_user["_id"]
         )
     except Exception as e:
         logger.error("Search failed", exc_info=True)
@@ -56,6 +58,7 @@ async def search_meetings(request: SearchRequest):
 async def search_within_meeting(
     meeting_id: str,
     q: str = Query(..., description="Your question about this meeting"),
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Search within a single specific meeting.
@@ -73,12 +76,12 @@ async def search_within_meeting(
 
     db = get_db()
 
-    meeting = await db.meetings.find_one({"_id": meeting_id})
+    meeting = await db.meetings.find_one({"_id": meeting_id, "user_id": current_user["_id"]})
     if not meeting:
         raise HTTPException(status_code=404, detail="Meeting not found")
     try:
 
-        result = answer_query(query=q, meeting_id=meeting_id)
+        result = answer_query(query=q, meeting_id=meeting_id, user_id=current_user["_id"])
     except Exception as e:
         logger.error("Search failed", exc_info=True)
         raise HTTPException(status_code=500, detail="Search failed due to an internal error")
