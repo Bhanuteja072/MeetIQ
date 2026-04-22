@@ -12,10 +12,14 @@ LangGraph pipeline, FAISS-powered RAG search, and a React frontend.
 
 ---
 
-> **Live Demo:** [your-app.vercel.app](https://your-app.vercel.app)
-> *(First request may take ~30s on cold start)*
+> **Live Demo:** Coming soon
 
 ---
+
+![Upload Page](assets/screenshots/upload.png)
+![Upload Page](assets/screenshots/search.png)
+![Upload Page](assets/screenshots/report.png)
+
 
 MeetIQ is a full-stack meeting intelligence platform for uploading meetings, transcribing conversations, generating AI reports, and searching insights with retrieval-augmented generation (RAG).
 
@@ -44,24 +48,24 @@ It includes:
 
 | Stage | Tool | Notes |
 |---|---|---|
-| Transcription | OpenAI Whisper API | ~10s for a 60min meeting |
-| Diarization | AssemblyAI | 5 real speakers detected accurately |
+| Transcription | OpenAI Whisper (local) | Time varies by audio length & hardware |
+| Diarization | pyannote.audio (local) | Requires HuggingFace token |
 | Analysis | LangGraph + Groq LLaMA 3.3 70B | 4 agents, ~15s total |
 | Search | FAISS + Sentence Transformers | Sub-second retrieval |
 
 ## Accuracy & Upgrade Path
 
-Current setup uses `whisper-1` API and AssemblyAI's standard diarization.
+Current setup uses Whisper (local) for transcription and pyannote.audio for speaker diarization.
 Accuracy can be improved by:
 
-- Upgrading to `whisper large-v3` (local) for 10-15% better WER on noisy audio
-- Switching from AssemblyAI to pyannote 3.1 with GPU for better speaker
+- Upgrading from `whisper base` to `whisper large-v3` for 10-15% better WER on noisy audio
+- Upgrading pyannote to version 3.1 with GPU support for better speaker
   separation in overlapping speech scenarios
 - Using `text-embedding-3-large` instead of `all-MiniLM-L6-v2` for richer
   semantic search
 
-These were deliberate tradeoffs to keep the stack deployable on free-tier
-infrastructure without sacrificing core functionality.
+These were deliberate tradeoffs to keep the stack lightweight and
+runnable on standard CPU hardware without sacrificing core functionality.
 
 ## Architecture Overview
 
