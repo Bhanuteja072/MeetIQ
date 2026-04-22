@@ -15,10 +15,12 @@ LangGraph pipeline, FAISS-powered RAG search, and a React frontend.
 > **Live Demo:** Coming soon
 
 ---
-
+**Upload Image :**
 ![Upload Page](assets/screenshots/upload.png)
 ![Upload Page](assets/screenshots/search.png)
 ![Upload Page](assets/screenshots/report.png)
+![Upload Page](assets/screenshots/Agents.png)
+
 
 
 MeetIQ is a full-stack meeting intelligence platform for uploading meetings, transcribing conversations, generating AI reports, and searching insights with retrieval-augmented generation (RAG).
