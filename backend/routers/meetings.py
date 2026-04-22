@@ -1,7 +1,7 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from backend.databases.mongo import get_db
 from backend.services.rag.embeddings import remove_meeting_from_index
-
+from backend.dependencies.auth import get_current_user
 
 router = APIRouter(prefix="/meetings", tags=["Meetings"])
 
@@ -14,10 +14,10 @@ def _get_db_or_raise():
 
 
 @router.get("/")
-async def get_all_meetings():
+async def get_all_meetings(current_user: dict = Depends(get_current_user)):
     """Get all meetings — for the archive page."""
     db = _get_db_or_raise()
-    cursor = db.meetings.find({}, {
+    cursor = db.meetings.find({"user_id": current_user["_id"]}, {
         "_id": 1, "title": 1, "status": 1,
         "created_at": 1, "duration": 1,
         "speakers": 1, "file_type": 1
@@ -32,10 +32,10 @@ async def get_all_meetings():
 
 
 @router.get("/{meeting_id}")
-async def get_meeting(meeting_id: str):
+async def get_meeting(meeting_id: str, current_user: dict = Depends(get_current_user)):
     """Get full meeting details including transcript."""
     db = _get_db_or_raise()
-    meeting = await db.meetings.find_one({"_id": meeting_id})
+    meeting = await db.meetings.find_one({"_id": meeting_id,"user_id": current_user["_id"]})
     
     if not meeting:
         raise HTTPException(status_code=404, detail="Meeting not found")
@@ -45,7 +45,7 @@ async def get_meeting(meeting_id: str):
 
 
 @router.patch("/{meeting_id}/rename-speaker")
-async def rename_speaker(meeting_id: str, speaker_id: str, new_name: str):
+async def rename_speaker(meeting_id: str, speaker_id: str, new_name: str, current_user: dict = Depends(get_current_user)):
     """
     Let the user rename 'speaker_1' to 'Rahul' etc.
     Updates both speakers array and all transcript segments.
@@ -54,7 +54,7 @@ async def rename_speaker(meeting_id: str, speaker_id: str, new_name: str):
         raise HTTPException(status_code=400, detail="New name cannot be empty")
 
     db = _get_db_or_raise()
-    meeting = await db.meetings.find_one({"_id": meeting_id})
+    meeting = await db.meetings.find_one({"_id": meeting_id, "user_id": current_user["_id"]})
     
     if not meeting:
         raise HTTPException(status_code=404, detail="Meeting not found")
@@ -80,10 +80,10 @@ async def rename_speaker(meeting_id: str, speaker_id: str, new_name: str):
 
 
 @router.delete("/{meeting_id}")
-async def delete_meeting(meeting_id: str):
+async def delete_meeting(meeting_id: str, current_user: dict = Depends(get_current_user)):
     """Delete a meeting record."""
     db = _get_db_or_raise()
-    result = await db.meetings.delete_one({"_id": meeting_id})
+    result = await db.meetings.delete_one({"_id": meeting_id, "user_id": current_user["_id"]})
     
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Meeting not found")
