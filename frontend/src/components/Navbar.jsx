@@ -1,5 +1,7 @@
 import { Link, useLocation } from 'react-router-dom'
 import { Upload, Archive, Search, Brain } from 'lucide-react'
+import { useAuth } from '../auth/AuthContext'   // ← add this import
+
 
 const links = [
   { to: '/', label: 'Upload', icon: Upload },
@@ -9,6 +11,7 @@ const links = [
 
 export default function Navbar() {
   const { pathname } = useLocation()
+  const { user, logout } = useAuth()
 
   return (
     <nav style={{
@@ -37,6 +40,16 @@ export default function Navbar() {
             <Icon size={15} /> {label}
           </Link>
         ))}
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <span style={{ color: '#64748b', fontSize: 14 }}>{user?.email}</span>
+        <button onClick={logout} style={{
+          background: '#1e293b', border: '1px solid #334155',
+          color: '#94a3b8', borderRadius: 8, padding: '6px 14px',
+          cursor: 'pointer', fontSize: 13
+        }}>
+          Sign out
+        </button>
       </div>
     </nav>
   )
