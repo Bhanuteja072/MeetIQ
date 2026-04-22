@@ -4,7 +4,7 @@ import os
 import uuid
 
 import aiofiles
-from fastapi import APIRouter, BackgroundTasks, File, HTTPException, UploadFile
+from fastapi import APIRouter, BackgroundTasks, File, Form, HTTPException, UploadFile, Depends
 from pathlib import Path
 from config import settings
 from backend.services.whisper_service import transcribe_audio
@@ -14,6 +14,7 @@ from backend.services.speaker_service import (
     merge_consecutive_same_speaker
 )
 from backend.services.file_service import parse_transcript_file, text_to_segments
+from backend.dependencies.auth import get_current_user
 # Diarize with pyannote (real voice fingerprinting)
 # from backend.services.speaker_service import diarize
 from backend.databases.mongo import get_db
@@ -83,7 +84,9 @@ async def _extract_audio_from_mp4(video_path: str, output_path: str) -> None:
 async def upload_and_transcribe(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
-    title: str = "Untitled Meeting"
+    title: str = Form(default="Untitled Meeting"),
+    current_user: dict = Depends(get_current_user)   # ← ADD THIS
+
 ):
     """
     Upload an audio/video file.
@@ -117,6 +120,7 @@ async def upload_and_transcribe(
     is_video = content_type == "video/mp4" or file_extension.lower() == ".mp4"
     meeting = {
         "_id": file_id,
+        "user_id": current_user["_id"],  # Associate meeting with user
         "title": title or file.filename,
         "file_name": file.filename,
         "file_path": file_path,
@@ -145,7 +149,9 @@ async def upload_and_transcribe(
 @router.post("/upload-transcript")
 async def upload_transcript_file(
     file: UploadFile = File(...),
-    title: str = "Untitled Meeting"
+    title: str = Form(default="Untitled Meeting"),
+    current_user: dict = Depends(get_current_user)   # ← ADD
+
 ):
     """
     Upload a TXT or PDF transcript directly.
@@ -182,6 +188,7 @@ async def upload_transcript_file(
     db = _get_db_or_raise()
     meeting = {
         "_id": file_id,
+        "user_id": current_user["_id"],  # Associate meeting with user
         "title": title or file.filename,
         "file_name": file.filename,
         "file_path": file_path,
@@ -207,10 +214,10 @@ async def upload_transcript_file(
 
 
 @router.get("/status/{meeting_id}")
-async def get_transcription_status(meeting_id: str):
+async def get_transcription_status(meeting_id: str, current_user: dict = Depends(get_current_user)):
     """Check the processing status of a meeting."""
     db = _get_db_or_raise()
-    meeting = await db.meetings.find_one({"_id": meeting_id})
+    meeting = await db.meetings.find_one({"_id": meeting_id, "user_id": current_user["_id"]})
     
     if not meeting:
         raise HTTPException(status_code=404, detail="Meeting not found")
