@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     database_name: str = Field("Meeting_Partner", validation_alias="DATABASE_NAME")
     huggingface_token: str = Field("", validation_alias="HUGGINGFACE_TOKEN")
     groq_api_key: str = Field("", validation_alias="GROQ_API_KEY")
-    upload_dir: str = Field("uploads", validation_alias="UPLOAD_DIR")
+    upload_dir: str = Field("/tmp/uploads", validation_alias="UPLOAD_DIR")
     max_file_size_mb: int = Field(200, validation_alias="MAX_FILE_SIZE_MB")
     jwt_secret: str = Field("", validation_alias="JWT_SECRET")
     jwt_algorithm: str = Field("HS256", validation_alias="JWT_ALGORITHM")

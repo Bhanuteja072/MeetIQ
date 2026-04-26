@@ -7,6 +7,20 @@ from pathlib import Path
 MODEL_SIZE = "base"
 model = None
 
+# MODEL_SIZE   = "medium"
+# COMPUTE_TYPE = "int8"   # GPU: "float16" | CPU or low VRAM: "int8"
+# BEAM_SIZE    = 5
+
+# _model  = None
+# _device = None
+# def _get_device() -> str:
+#     try:
+#         import torch
+#         return "cuda" if torch.cuda.is_available() else "cpu"
+#     except ImportError:
+#         return "cpu"
+    
+
 def load_whisper_model():
     global model
     if model is None:
@@ -18,6 +32,46 @@ def load_whisper_model():
         except Exception as e:
             raise RuntimeError(f"Whisper model failed to load: {e}")
     return model
+
+
+# def load_whisper_model():
+#     """
+#     Load faster-whisper model once and cache globally.
+ 
+#     faster-whisper vs old openai-whisper:
+#     - Same model weights (large-v2 etc.) — identical transcription quality
+#     - Uses CTranslate2 C++ engine instead of PyTorch → 4x faster, less memory
+#     - NO torch dependency conflict → zero clash with pyannote
+#     - Word-level timestamps built-in via DTW on Whisper's own attention scores
+#     """
+#     global _model, _device
+ 
+#     if _model is not None:
+#         return _model
+ 
+#     try:
+#         from faster_whisper import WhisperModel
+#     except ImportError:
+#         raise ImportError(
+#             "faster-whisper is not installed.\n"
+#             "Run: pip install faster-whisper"
+#         )
+ 
+#     _device = _get_device()
+ 
+#     # float16 only works on CUDA — fall back to int8 on CPU
+#     compute_type = COMPUTE_TYPE if _device == "cuda" else "int8"
+ 
+#     print(f"🔄 Loading faster-whisper '{MODEL_SIZE}' on {_device} ({compute_type})...")
+ 
+#     _model = WhisperModel(
+#         MODEL_SIZE,
+#         device=_device,
+#         compute_type=compute_type,
+#     )
+ 
+#     print(f"✅ faster-whisper loaded on {_device}")
+#     return _model
 
 def transcribe_audio(file_path: str) -> dict:
     """
