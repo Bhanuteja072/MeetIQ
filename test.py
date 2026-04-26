@@ -2,7 +2,7 @@ import os
 from huggingface_hub import HfApi
 
 api = HfApi()
-token = os.getenv("HUGGINGFACE_TOKEN")
+token = os.getenv("HUGGINGFACE_TOKENN")
 
 if not token:
     raise ValueError("Set HUGGINGFACE_TOKEN in your environment before running this script.")
