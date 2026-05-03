@@ -242,10 +242,10 @@ async def process_audio_transcription(meeting_id: str, file_path: str, content_t
             {"$set": {"status": "transcribing"}}
         )
 
-        if content_type == "video/mp4" or file_path.lower().endswith(".mp4"):
-            temp_audio_path = os.path.join(settings.upload_dir, f"{meeting_id}.wav")
-            await _extract_audio_from_mp4(file_path, temp_audio_path)
-            audio_path = temp_audio_path
+        # if content_type == "video/mp4" or file_path.lower().endswith(".mp4"):
+        #     temp_audio_path = os.path.join(settings.upload_dir, f"{meeting_id}.wav")
+        #     await _extract_audio_from_mp4(file_path, temp_audio_path)
+        #     audio_path = temp_audio_path
 
         # ONE call — transcription + diarization together
         from backend.services.speaker_service import (
