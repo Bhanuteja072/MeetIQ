@@ -42,6 +42,7 @@ dnspython==2.8.0
 
 # AssemblyAI (transcription + diarization via API)
 requests==2.33.1
+assemblyai==0.36.0
 
 # File parsing
 PyPDF2==3.0.1
