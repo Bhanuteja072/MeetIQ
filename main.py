@@ -13,6 +13,25 @@ logging.basicConfig(level=logging.INFO)
 async def lifespan(app: FastAPI):
     # Startup
     await connect_db()
+    # ── Recover stuck meetings from previous crash ──
+    try:
+        db = get_db()
+        if db is not None:
+            result = await db.meetings.update_many(
+                {"status": "transcribing"},
+                {"$set": {
+                    "status": "failed",
+                    "error": "Server restarted during processing — please re-upload"
+                }}
+            )
+            if result.modified_count > 0:
+                logging.warning(
+                    "Recovered %d stuck meetings on startup",
+                    result.modified_count
+                )
+    except Exception as e:
+        logging.error("Startup recovery failed: %s", e)
+    
     yield
     # Shutdown
     await close_db()
