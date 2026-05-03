@@ -7,7 +7,7 @@ import aiofiles
 from fastapi import APIRouter, BackgroundTasks, File, Form, HTTPException, UploadFile, Depends
 from pathlib import Path
 from config import settings
-from backend.services.whisper_service import transcribe_audio
+# from backend.services.whisper_service import transcribe_audio
 from backend.services.speaker_service import (
     diarize,
     extract_speakers,
@@ -232,13 +232,11 @@ async def get_transcription_status(meeting_id: str, current_user: dict = Depends
 
 # Background task — runs after upload returns response
 async def process_audio_transcription(meeting_id: str, file_path: str, content_type: str):
-    """Background task: transcribe audio and update MongoDB."""
     db = _get_db_or_raise()
     audio_path = file_path
     temp_audio_path = None
-    
+
     try:
-        # Update status to transcribing
         await db.meetings.update_one(
             {"_id": meeting_id},
             {"$set": {"status": "transcribing"}}
@@ -249,33 +247,33 @@ async def process_audio_transcription(meeting_id: str, file_path: str, content_t
             await _extract_audio_from_mp4(file_path, temp_audio_path)
             audio_path = temp_audio_path
 
-        # Transcribe with Whisper (run in thread to avoid blocking)
-        result = await asyncio.to_thread(transcribe_audio, audio_path)
-        
-        # Diarize
-        diarized = diarize(
-            segments=result["segments"],
-            method="pyannote",
-            audio_file_path=audio_path,
+        # ONE call — transcription + diarization together
+        from backend.services.speaker_service import (
+            assemblyai_transcribe_and_diarize,
+            merge_consecutive_same_speaker
         )
-        merged = merge_consecutive_same_speaker(diarized)
-        speakers = extract_speakers(diarized)
-        
-        # Update MongoDB with results
+
+        result = await asyncio.to_thread(
+            assemblyai_transcribe_and_diarize, audio_path
+        )
+
+        merged   = merge_consecutive_same_speaker(result["segments"])
+        speakers = result["speakers"]
+
         await db.meetings.update_one(
             {"_id": meeting_id},
             {"$set": {
-                "status": "completed",
+                "status":         "completed",
                 "raw_transcript": result["text"],
-                "transcript": merged,
-                "speakers": speakers,
-                "duration": result["duration"],
-                "language": result.get("language", "en")
+                "transcript":     merged,
+                "speakers":       speakers,
+                "duration":       result["duration"],
+                "language":       result["language"],
             }}
         )
 
         logger.info("Meeting %s transcription complete", meeting_id)
-        
+
     except Exception as e:
         await db.meetings.update_one(
             {"_id": meeting_id},
@@ -287,4 +285,4 @@ async def process_audio_transcription(meeting_id: str, file_path: str, content_t
             try:
                 os.remove(temp_audio_path)
             except OSError:
-                logger.warning("Failed to remove temp audio file: %s", temp_audio_path)
+                logger.warning("Failed to remove temp audio: %s", temp_audio_path)
