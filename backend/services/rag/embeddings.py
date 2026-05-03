@@ -3,7 +3,6 @@ import json
 import logging
 import numpy as np
 from typing import Any, Dict, List
-from sentence_transformers import SentenceTransformer
 import faiss
 
 logger = logging.getLogger(__name__)
@@ -32,10 +31,11 @@ os.makedirs(FAISS_DIR, exist_ok=True)
 # Load embedding model once
 _embed_model = None
 
-def get_embed_model() -> SentenceTransformer:
+def get_embed_model():
     global _embed_model
     if _embed_model is None:
         logger.info("Loading embedding model: %s", EMBED_MODEL)
+        from sentence_transformers import SentenceTransformer
         _embed_model = SentenceTransformer(EMBED_MODEL)
         logger.info("Embedding model loaded")
     return _embed_model
