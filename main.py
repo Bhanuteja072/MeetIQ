@@ -27,7 +27,7 @@ app = FastAPI(
 # Allow React frontend to call this API later
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:5173","*"],
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:8000","http://localhost:5173","*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -39,6 +39,12 @@ app.include_router(meetings.router,prefix="/api")
 app.include_router(transcription.router,prefix="/api")
 app.include_router(analysis.router,prefix="/api")
 app.include_router(search.router,prefix="/api")
+# Register routers
+# app.include_router(auth.router,)
+# app.include_router(meetings.router)
+# app.include_router(transcription.router)
+# app.include_router(analysis.router)
+# app.include_router(search.router)
 @app.get("/")
 async def root():
     return {
