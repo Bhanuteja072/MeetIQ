@@ -647,48 +647,70 @@ def _poll_until_complete(transcript_id: str, max_wait_seconds: int = 600) -> Dic
 #         "duration":  duration,
 #     }
 
+
 def assemblyai_transcribe_and_diarize(audio_file_path: str) -> Dict[str, Any]:
-    import assemblyai as aai
+    """
+    Use AssemblyAI for BOTH transcription and diarization in one call.
+    Returns same format as your whisper_service.transcribe_audio() so
+    transcription.py needs minimal changes.
+    """
+    if not os.path.exists(audio_file_path):
+        raise FileNotFoundError(f"Audio file not found: {audio_file_path}")
 
-    aai.settings.api_key = settings.assemblyai_api_key.strip()
+    # Step 1 — upload
+    upload_url = _upload_audio_to_assemblyai(audio_file_path)
 
-    config = aai.TranscriptionConfig(
-        speaker_labels=True,
-        speech_models=["universal-2"],
+    # Step 2 — request transcription + diarization together
+    payload = {
+        "audio_url": upload_url,
+        "speaker_labels": True,
+        "speech_models": ["universal-2"],
+    }
+    response = requests.post(
+        f"{ASSEMBLYAI_BASE_URL}/transcript",
+        headers=_get_headers(),
+        json=payload,
+        timeout=30
     )
+    if response.status_code != 200:
+        raise RuntimeError(f"AssemblyAI request failed: {response.status_code} {response.text}")
 
-    transcriber = aai.Transcriber(config=config)
-    transcript = transcriber.transcribe(audio_file_path)
+    transcript_id = response.json()["id"]
 
-    if transcript.status == aai.TranscriptStatus.error:
-        raise RuntimeError(f"AssemblyAI failed: {transcript.error}")
+    # Step 3 — poll
+    result = _poll_until_complete(transcript_id)
 
-    utterances = transcript.utterances or []
+    # Step 4 — extract utterances as segments with speaker_id
+    utterances = result.get("utterances") or []
     speaker_index: Dict[str, str] = {}
     segments = []
 
     for utt in utterances:
-        raw_label = utt.speaker
+        raw_label = utt.get("speaker", "A")
         if raw_label not in speaker_index:
             speaker_index[raw_label] = f"speaker_{len(speaker_index) + 1}"
 
         segments.append({
-            "start":      round(utt.start / 1000.0, 2),
-            "end":        round(utt.end   / 1000.0, 2),
-            "text":       utt.text.strip(),
+            "start":      round(utt["start"] / 1000.0, 2),
+            "end":        round(utt["end"]   / 1000.0, 2),
+            "text":       utt.get("text", "").strip(),
             "speaker_id": speaker_index[raw_label],
         })
 
     duration = segments[-1]["end"] if segments else 0
+
+    # Build speakers list
     speakers = extract_speakers(segments)
 
     return {
-        "text":     transcript.text or "",
-        "segments": segments,
-        "speakers": speakers,
-        "language": transcript.language_code or "en",
-        "duration": duration,
+        "text":      result.get("text", ""),
+        "segments":  segments,
+        "speakers":  speakers,
+        "language":  result.get("language_code", "en"),
+        "duration":  duration,
     }
+
+
 def assemblyai_diarization(
     audio_file_path: str,
     whisper_segments: List[Dict[str, Any]],
