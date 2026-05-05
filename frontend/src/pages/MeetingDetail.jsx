@@ -71,6 +71,104 @@ function BlockerCard({ item }) {
     </div>
   )
 }
+function TranscriptionProgress({ seconds }) {
+  const mins = Math.floor(seconds / 60)
+  const secs = seconds % 60
+  const timerStr = `${mins}:${String(secs).padStart(2, '0')}`
+
+  const msgs = [
+    'Sending audio to AssemblyAI...',
+    'Transcription in progress...',
+    'Detecting speaker voices...',
+    'Finalizing...',
+  ]
+  const msgIdx = Math.min(Math.floor(seconds / 18), msgs.length - 1)
+
+  return (
+    <div style={{
+      background: '#1e293b', border: '1px solid #334155',
+      borderRadius: 12, padding: '28px 24px', maxWidth: 480
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+        <div style={{
+          width: 10, height: 10, borderRadius: '50%', background: '#6366f1', flexShrink: 0,
+          animation: 'meetiq-pulse 1.4s ease-in-out infinite'
+        }} />
+        <div>
+          <p style={{ color: '#f1f5f9', fontWeight: 600, fontSize: 15, margin: 0 }}>
+            Processing your meeting
+          </p>
+          <p style={{ color: '#64748b', fontSize: 13, margin: 0 }}>
+            {msgs[msgIdx]}
+          </p>
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 20 }}>
+        <span style={{
+          color: '#a78bfa', fontSize: 28, fontWeight: 700, fontVariantNumeric: 'tabular-nums'
+        }}>
+          {timerStr}
+        </span>
+        <span style={{ color: '#475569', fontSize: 13 }}>elapsed</span>
+      </div>
+
+      {/* Steps */}
+      {[
+        { label: 'Upload received', desc: 'File saved to server', state: 'done' },
+        { label: 'Transcribing & identifying speakers', desc: msgs[msgIdx], state: 'active' },
+        { label: 'Ready for AI analysis', desc: 'Run once transcription completes', state: 'waiting' },
+      ].map((step, i) => (
+        <div key={i} style={{
+          display: 'flex', alignItems: 'flex-start', gap: 12,
+          padding: '8px 0',
+          borderBottom: i < 2 ? '1px solid #1a2438' : 'none'
+        }}>
+          <div style={{
+            width: 22, height: 22, borderRadius: '50%', flexShrink: 0, marginTop: 1,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11,
+            background: step.state === 'done' ? '#6366f1' : step.state === 'active' ? '#1e1b4b' : '#0f172a',
+            border: step.state === 'done' ? 'none' : `2px solid ${step.state === 'active' ? '#6366f1' : '#334155'}`,
+            color: '#fff'
+          }}>
+            {step.state === 'done' ? '✓' : step.state === 'active' ? (
+              <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#6366f1' }} />
+            ) : null}
+          </div>
+          <div>
+            <p style={{
+              margin: 0, fontSize: 13, fontWeight: 500,
+              color: step.state === 'done' ? '#64748b' : step.state === 'active' ? '#f1f5f9' : '#334155'
+            }}>{step.label}</p>
+            {step.state === 'active' && (
+              <p style={{ margin: 0, fontSize: 12, color: '#6366f1' }}>{step.desc}</p>
+            )}
+          </div>
+        </div>
+      ))}
+
+      {/* Progress bar */}
+      <div style={{ background: '#0f172a', borderRadius: 99, height: 3, margin: '18px 0 16px', overflow: 'hidden' }}>
+        <div style={{
+          height: 3, borderRadius: 99, background: '#6366f1',
+          width: `${Math.min((seconds / 180) * 100, 95)}%`,
+          transition: 'width 1s linear'
+        }} />
+      </div>
+
+      <p style={{ color: '#475569', fontSize: 12, margin: 0, lineHeight: 1.6 }}>
+        Typical processing time is 1–3 min. You can leave this page and return anytime.
+      </p>
+
+      <style>{`
+        @keyframes meetiq-pulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.4; transform: scale(0.8); }
+        }
+      `}</style>
+    </div>
+  )
+}
 
 // ── Main page ─────────────────────────────────────────────
 
@@ -86,6 +184,7 @@ export default function MeetingDetail() {
   const [searching, setSearching] = useState(false)
   const [editingSpeaker, setEditingSpeaker] = useState(null)
   const [speakerName, setSpeakerName] = useState('')
+  const [transcribeSeconds, setTranscribeSeconds] = useState(0)
 
   const loadMeeting = useCallback(async () => {
     try {
@@ -124,21 +223,26 @@ export default function MeetingDetail() {
   useEffect(() => {
     if (!meeting) return
     if (meeting.status === 'completed') return
+    // Start elapsed timer
+    const timer = setInterval(() => setTranscribeSeconds(s => s + 1), 1000)
 
     const interval = setInterval(async () => {
       const s = await getTranscriptionStatus(id)
       if (s.status === 'completed') {
         clearInterval(interval)
+        clearInterval(timer)       // ← stop timer
+        setTranscribeSeconds(0)
         loadMeeting()
         toast.success('Transcription complete!')
       }
       if (s.status === 'failed') {
         clearInterval(interval)
+        clearInterval(timer)
         toast.error('Transcription failed')
       }
-    }, 4000)
+    }, 15000)
 
-    return () => clearInterval(interval)
+    return () => { clearInterval(interval); clearInterval(timer) }
   }, [meeting?.status, id])
 
   // Poll analysis status while analyzing
@@ -334,7 +438,7 @@ export default function MeetingDetail() {
       {tab === 'report' && !report && (
         <div style={{ color: '#475569', textAlign: 'center', padding: '48px 0' }}>
           {meeting.status !== 'completed'
-            ? 'Waiting for transcription to complete...'
+            ? <TranscriptionProgress seconds={transcribeSeconds} />
             : 'Click "Run AI Analysis" to generate the report'}
         </div>
       )}
