@@ -42,11 +42,13 @@ dnspython==2.8.0
 
 # AssemblyAI (transcription + diarization via API)
 requests==2.33.1
-assemblyai==0.36.0
-
+assemblyai==0.17.0
 # File parsing
 PyPDF2==3.0.1
 python-docx==1.1.0
+
+#resend emails
+resend==2.30.0
 
 # Video processing (for MP4 audio extraction)
 moviepy==2.2.1
