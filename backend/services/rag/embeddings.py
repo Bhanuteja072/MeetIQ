@@ -21,7 +21,7 @@ INDEX_FILE = os.path.join(FAISS_DIR, "meetings.index")
 METADATA_FILE = os.path.join(FAISS_DIR, "metadata.json")
 
 
-EMBED_MODEL = "all-MiniLM-L6-v2"
+# EMBED_MODEL = "all-MiniLM-L6-v2"
 EMBED_MODEL = "paraphrase-MiniLM-L3-v2"
 CHUNK_SIZE = 300       # words per chunk
 CHUNK_OVERLAP = 50     # overlap between chunks
