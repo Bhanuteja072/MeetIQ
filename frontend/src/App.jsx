@@ -10,6 +10,7 @@ import Search from './pages/Search'
 import NotFound from './pages/NotFound'
 import Login from './pages/Login'           // ← was missing
 import Register from './pages/Register'     // ← was missing
+import ForgotPassword from './pages/ForgotPassword'
 
 export default function App() {
   return (
@@ -21,6 +22,7 @@ export default function App() {
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/" element={<ProtectedRoute><Upload /></ProtectedRoute>} />
             <Route path="/archive" element={<ProtectedRoute><Archive /></ProtectedRoute>} />
             <Route path="/meetings/:id" element={<ProtectedRoute><MeetingDetail /></ProtectedRoute>} />
