@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     jwt_secret: str = Field("", validation_alias="JWT_SECRET")
     jwt_algorithm: str = Field("HS256", validation_alias="JWT_ALGORITHM")
     jwt_expire_minutes: int = Field(4320, validation_alias="JWT_EXPIRE_MINUTES")  # 3 days
+    resend_api_key: str = Field("", validation_alias="RESEND_API_KEY")
+    from_email: str = Field("", validation_alias="FROM_EMAIL")
 settings = Settings()
 
 # Create upload directory if it doesn't exist
