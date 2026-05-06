@@ -61,6 +61,11 @@ export default function Login() {
           <button onClick={handleSubmit} disabled={loading} style={btnStyle(loading)}>
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
+          <p style={{ textAlign: 'center', marginTop: 16, fontSize: 13, color: '#475569' }}>
+            <Link to="/forgot-password" style={{ color: '#6366f1' }}>
+              Forgot password?
+            </Link>
+          </p>
         </div>
 
         <p style={{ color: '#64748b', textAlign: 'center', marginTop: 24, fontSize: 14 }}>
