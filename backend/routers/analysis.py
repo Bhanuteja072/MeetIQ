@@ -1,4 +1,4 @@
-import logging
+import logging, asyncio
 from fastapi import APIRouter, HTTPException, BackgroundTasks, Depends
 from backend.dependencies.auth import get_current_user
 from backend.databases.mongo import get_db
@@ -125,22 +125,11 @@ async def _run_analysis_background(
             {"$set": {
                 "report": report,
                 "analysis_status": "completed",
+                "embedding_status": "pending",
                 "analyzed_at": datetime.utcnow()
             }}
         )
-        try:
-            meeting_doc = await db.meetings.find_one({"_id": meeting_id})
-            embed_meeting(
-                meeting_id=meeting_id,
-                transcript=transcript,
-                report=report,
-                meeting_title=meeting_doc.get("title", ""),
-                user_id=user_id, 
-            )
-        except Exception as embed_err:
-            logger.warning("Embedding failed for meeting %s: %s", meeting_id, embed_err)
         logger.info("Analysis complete for meeting %s", meeting_id)
-
     except Exception as e:
         await db.meetings.update_one(
             {"_id": meeting_id},
@@ -150,3 +139,30 @@ async def _run_analysis_background(
             }}
         )
         logger.exception("Analysis failed for meeting %s", meeting_id)
+        return
+    try:
+        await db.meetings.update_one(
+                        {"_id": meeting_id},
+            {"$set": {"embedding_status": "embedding"}}
+        )
+        meeting_doc = await db.meetings.find_one({"_id": meeting_id})
+        await asyncio.to_thread(
+                embed_meeting,
+                meeting_id=meeting_id,
+                transcript=transcript,
+                report=report,
+                meeting_title=meeting_doc.get("title", ""),
+                user_id=user_id, 
+        )
+        await db.meetings.update_one(
+            {"_id": meeting_id},
+            {"$set": {"embedding_status": "completed"}}
+        )
+    except Exception as embed_err:
+        await db.meetings.update_one(
+            {"_id": meeting_id},
+            {"$set": {
+                "embedding_status": "failed",
+            }}
+        )
+        logger.warning("Embedding failed for meeting %s: %s", meeting_id, embed_err)
