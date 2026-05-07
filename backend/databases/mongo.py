@@ -14,6 +14,8 @@ async def connect_db() -> None:
         await db.users.create_index("email", unique=True)
         # Speed up per-user meeting queries
         await db.meetings.create_index("user_id")
+        await db.chunks.create_index("meeting_id")
+        await db.chunks.create_index("user_id")
         print(f"✅ Connected to MongoDB: {settings.database_name}")
     except Exception as e:
         raise RuntimeError(f"MongoDB connection failed: {e}")
