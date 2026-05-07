@@ -8,7 +8,8 @@ a structured AI report with decisions, action items, blockers, and a
 searchable archive of everything ever discussed.
 
 Built end-to-end as a solo project: FastAPI backend, multi-agent
-LangGraph pipeline, FAISS-powered RAG search, and a React frontend.
+LangGraph pipeline, MongoDB Atlas Vector Search with Jina embeddings,
+and a React frontend.
 
 ---
 
@@ -30,12 +31,13 @@ MeetIQ is a full-stack meeting intelligence platform for uploading meetings, tra
 
 It includes:
 
-- FastAPI backend with MongoDB, Whisper, pyannote, LangGraph, Groq, and FAISS
-- React frontend (Vite) with auth, archive, meeting detail, and search pages
+- FastAPI backend with MongoDB, AssemblyAI, LangGraph, Groq, and Jina embeddings
+- React frontend (Vite) with auth, archive, meeting detail, search, and password reset
 
 ## Core Capabilities
 
 - User authentication with JWT (register, login, protected routes)
+- Password reset via OTP email
 - Audio/video upload (MP3/WAV/MP4/M4A) with background transcription
 - Transcript file upload (TXT/PDF) with immediate parsing
 - Speaker diarization and speaker rename support
@@ -47,62 +49,39 @@ It includes:
 - Semantic search:
 	- Global search across meetings
 	- Meeting-scoped search
-- FAISS vector index persistence for retrieval
+- MongoDB Atlas Vector Search for retrieval
 
 ## Pipeline Performance
 
 | Stage | Tool | Notes |
 |---|---|---|
-| Transcription | OpenAI Whisper (local) | Time varies by audio length & hardware |
-| Diarization | pyannote.audio (local) | Requires HuggingFace token |
+| Transcription | AssemblyAI API | Time varies by audio length & queue |
+| Diarization | AssemblyAI API | Speaker labels included |
 | Analysis | LangGraph + Groq LLaMA 3.3 70B | 4 agents, ~15s total |
-| Search | FAISS + Sentence Transformers | Sub-second retrieval |
+| Search | MongoDB Atlas Vector Search + Jina embeddings | Retrieval + grounded answer |
 
 ## Accuracy & Upgrade Path
 
-Current setup uses Whisper (local) for transcription and pyannote.audio for speaker diarization.
-Accuracy can be improved by:
-
-- Upgrading from `whisper base` to `whisper large-v3` for 10-15% better WER on noisy audio
-- Upgrading pyannote to version 3.1 with GPU support for better speaker
-  separation in overlapping speech scenarios
-- Using `text-embedding-3-large` instead of `all-MiniLM-L6-v2` for richer
-  semantic search
-
-These were deliberate tradeoffs to keep the stack lightweight and
-runnable on standard CPU hardware without sacrificing core functionality.
+Current setup uses AssemblyAI for transcription + diarization and Jina embeddings
+for semantic search. If you want a fully local stack, you can swap in
+faster-whisper and pyannote, but it will require more RAM and GPU support.
 
 ## Architecture Overview
 
 1. User uploads audio/video or transcript.
 2. Backend stores upload and creates a meeting document in MongoDB.
-3. Audio/video is transcribed with Whisper and diarized with pyannote.
+3. Audio/video is transcribed and diarized with AssemblyAI.
 4. User triggers analysis for completed meetings.
 5. LangGraph executes summary/action/decision/blocker agents.
 6. Final report is saved in MongoDB.
-7. Transcript plus report are embedded into FAISS.
-8. Search retrieves relevant chunks and Groq generates grounded answers.
+7. Transcript plus report are chunked and embedded with Jina.
+8. Atlas Vector Search retrieves relevant chunks and Groq generates grounded answers.
 
 ## Why Not Render or Railway?
 
-The full local stack (Whisper + pyannote) requires ~1.6GB RAM:
-
-```
-Whisper base model      → ~500MB
-pyannote diarization    → ~1000MB
-FastAPI + dependencies  → ~100MB
-─────────────────────────────────
-Total                   → ~1.6GB
-```
-
-Render free tier is capped at 512MB — the server gets OOM killed on the
-first transcription request. Railway's free tier has the same problem.
-
-**Solution:** Replaced local models with API calls (OpenAI Whisper API +
-AssemblyAI) so the server stays under 400MB and deploys cleanly on
-Google Cloud Run's free tier with 2GB RAM allocated per container.
-
-This was a real infrastructure decision, not a workaround.
+Local transcription + diarization models are heavy and can exceed free-tier
+memory limits on Render/Railway. This project uses API-based services
+(AssemblyAI + Jina) so the backend stays lightweight and deploys cleanly.
 
 ## Tech Stack
 
@@ -110,11 +89,11 @@ This was a real infrastructure decision, not a workaround.
 
 - FastAPI, Uvicorn
 - MongoDB (motor/pymongo)
-- Whisper (openai-whisper)
-- pyannote.audio (speaker diarization)
+- AssemblyAI (transcription + diarization via API)
 - LangGraph + LangChain + Groq
-- SentenceTransformers + FAISS
+- Jina Embeddings API + MongoDB Atlas Vector Search
 - MoviePy (MP4 audio extraction)
+- Resend (password reset emails)
 
 ### Frontend
 
@@ -206,6 +185,7 @@ Meeting_Patner/
 |   |   |-- main.jsx
 |   |   `-- pages/
 |   |       |-- Archive.jsx
+|   |       |-- ForgotPassword.jsx
 |   |       |-- Login.jsx
 |   |       |-- MeetingDetail.jsx
 |   |       |-- NotFound.jsx
@@ -230,19 +210,24 @@ Create a `.env` file in the project root:
 ```env
 MONGO_URL=mongodb://localhost:27017
 DATABASE_NAME=Meeting_Partner
-HUGGINGFACE_TOKEN=your_hf_token
+ASSEMBLYAI_API_KEY=your_assemblyai_key
 GROQ_API_KEY=your_groq_api_key
+JINA_API_KEY=your_jina_api_key
 UPLOAD_DIR=uploads
 MAX_FILE_SIZE_MB=200
 JWT_SECRET=replace_with_a_strong_secret
 JWT_ALGORITHM=HS256
 JWT_EXPIRE_MINUTES=4320
+RESEND_API_KEY=your_resend_key
+FROM_EMAIL=you@yourdomain.com
 ```
 
 ### Env Notes
 
-- `HUGGINGFACE_TOKEN` is required for pyannote diarization.
+- `ASSEMBLYAI_API_KEY` is required for transcription + diarization.
 - `GROQ_API_KEY` is required for analysis and RAG answers.
+- `JINA_API_KEY` is required for embeddings.
+- `RESEND_API_KEY` and `FROM_EMAIL` are required for password reset emails.
 - `JWT_SECRET` must be set in non-dev environments.
 - Upload files are stored in `UPLOAD_DIR`.
 
@@ -289,6 +274,7 @@ Vite proxies `/api/*` requests to `http://localhost:8000`.
 
 - `/login` Public login page
 - `/register` Public register page
+- `/forgot-password` Public OTP reset flow
 - `/` Protected upload page
 - `/archive` Protected meeting archive
 - `/meetings/:id` Protected meeting details (report/transcript/search tabs)
@@ -305,6 +291,9 @@ All endpoints below are protected by JWT unless marked Public.
 - `GET /health` Health check
 - `POST /auth/register`
 - `POST /auth/login`
+- `POST /auth/forgot-password`
+- `POST /auth/verify-otp`
+- `POST /auth/reset-password`
 
 ### Auth
 
@@ -326,6 +315,9 @@ All endpoints below are protected by JWT unless marked Public.
 		}
 		```
 - `GET /auth/me`
+- `POST /auth/forgot-password`
+- `POST /auth/verify-otp`
+- `POST /auth/reset-password`
 
 ### Transcription
 
@@ -376,8 +368,7 @@ All endpoints below are protected by JWT unless marked Public.
 2. Backend writes uploaded file to disk and meeting metadata to MongoDB.
 3. For audio/video:
 	 - Optional MP4 -> WAV extraction via MoviePy
-	 - Whisper transcription (timestamps)
-	 - pyannote diarization
+	 - AssemblyAI transcription + speaker labeling
 	 - Speaker extraction + segment merge
 4. User opens meeting detail and triggers analysis.
 5. LangGraph runs 4 agents sequentially:
@@ -386,19 +377,20 @@ All endpoints below are protected by JWT unless marked Public.
 	 - `decision_agent`
 	 - `blocker_agent`
 6. `report_builder` composes final report and stores in MongoDB.
-7. Transcript + report are chunked and embedded into FAISS.
-8. Search endpoint retrieves chunks and Groq answers using retrieved context.
+7. Transcript + report are chunked and embedded with Jina.
+8. Atlas Vector Search retrieves chunks and Groq answers using retrieved context.
 
 ## Data Persistence
 
 - MongoDB collections:
 	- `users`
 	- `meetings`
+	- `chunks`
 - Upload files:
 	- `uploads/` by default (`UPLOAD_DIR`)
 - Vector index:
-	- Code path currently points to `backend/faiss_store/meetings.index` and `backend/faiss_store/metadata.json`
-	- There is also a root-level `faiss_store/` folder in this repository
+	- MongoDB Atlas Vector Search index on `chunks`
+	- Legacy `faiss_store/` folders remain from earlier experiments
 
 ## Useful Commands
 
@@ -481,13 +473,14 @@ curl "http://127.0.0.1:8000/search/meetings/<meeting_id>/search?q=What decisions
 - Analysis must be completed first for the meeting.
 - Report and embeddings must exist.
 
-### Diarization fails
+### Transcription or diarization fails
 
-- Verify `HUGGINGFACE_TOKEN` is valid and has access to pyannote models.
+- Verify `ASSEMBLYAI_API_KEY` is set and active.
 
 ### Analysis or RAG fails
 
 - Verify `GROQ_API_KEY` is set.
+- Verify `JINA_API_KEY` is set (embeddings).
 
 ### MP4 upload issues
 
@@ -504,15 +497,15 @@ curl "http://127.0.0.1:8000/search/meetings/<meeting_id>/search?q=What decisions
 
 ## Development Notes
 
-- Models are loaded lazily and cached in process (Whisper, pyannote, embeddings, Groq clients).
-- First transcription/diarization can be slower due to model load.
+- External APIs are called on demand (AssemblyAI, Jina, Groq).
+- First transcription/diarization can be slower due to upstream queue time.
 - Analysis and transcription are background tasks; frontend polls status.
 - CORS allows `http://localhost:3000` and `http://localhost:5173`.
 - `test.py` is a standalone helper script and is not part of runtime API.
 
 ## Security Notes
 
-- Do not commit real API keys or Hugging Face tokens.
+- Do not commit real API keys or tokens.
 - Use strong `JWT_SECRET` in production.
 - Rotate credentials if a token was exposed.
 
@@ -521,5 +514,5 @@ curl "http://127.0.0.1:8000/search/meetings/<meeting_id>/search?q=What decisions
 - [ ] Email follow-up generator — draft per-attendee emails from action items
 - [ ] Slack/Teams integration — post reports automatically after meetings
 - [ ] Real-time transcription — live meeting support via WebSocket
-- [ ] Multi-language support — Whisper supports 99 languages, pipeline is language-agnostic
+- [ ] Multi-language support — transcription pipeline is language-agnostic
 - [ ] Mobile app — React Native with audio recording built in
