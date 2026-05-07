@@ -4,7 +4,7 @@ import { useAuth } from '../auth/AuthContext'   // ← add this import
 
 
 const links = [
-  { to: '/', label: 'Upload', icon: Upload },
+  { to: '/upload', label: 'Upload', icon: Upload },
   { to: '/archive', label: 'Meetings', icon: Archive },
   { to: '/search', label: 'Search', icon: Search },
 ]
@@ -19,7 +19,7 @@ export default function Navbar() {
       display: 'flex', alignItems: 'center', gap: 32,
       height: 56, position: 'sticky', top: 0, zIndex: 100
     }}>
-      <Link to="/" style={{
+      <Link to="/upload" style={{
         display: 'flex', alignItems: 'center', gap: 8,
         color: '#6366f1', fontWeight: 700, fontSize: 18,
         textDecoration: 'none'
