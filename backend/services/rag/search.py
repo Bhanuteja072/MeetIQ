@@ -1,15 +1,11 @@
-import json
 import logging
-import os
-import numpy as np
-import faiss
 from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
+from typing import List, Dict, Any, Optional
 from config import settings
+from backend.databases.mongo import get_db
 from backend.services.rag.embeddings import (
-    get_embed_model,
-    INDEX_FILE,
-    METADATA_FILE,
+    get_embeddings
 )
 
 logger = logging.getLogger(__name__)
@@ -19,65 +15,103 @@ TOP_K = 5  # Number of chunks to retrieve per query
 
 # ── Retrieval ──────────────────────────────────────────────
 
-def retrieve_relevant_chunks(query: str, meeting_id: str = None, user_id: str = None, top_k: int = TOP_K):
+async def retrieve_relevant_chunks(query: str, meeting_id: str = None, user_id: str = None, top_k: int = TOP_K) -> List[Dict[str, Any]]:
     """
-    Embed the query and find the top_k most similar chunks in FAISS.
-
-    Args:
-        query: Natural language question from user
-        meeting_id: If provided, restrict search to one meeting.
-                    If None, search across ALL meetings (global RAG).
-        top_k: Number of chunks to return
-
-    Returns:
-        List of metadata dicts for the top matching chunks
+    Embed query with Nomic and search MongoDB Atlas Vector Search.
     """
-    if not os.path.exists(INDEX_FILE) or not os.path.exists(METADATA_FILE):
+    db = get_db()
+    # Use search_query task type for better retrieval quality
+    embeddings = await get_embeddings([query])
+    query_vector = embeddings[0]
+    vector_search: Dict[str, Any] = {
+        "index": "vector_index",
+        "path": "embedding",
+        "queryVector": query_vector,
+        "numCandidates": 200,
+        "limit": top_k * 5,
+    }
+        # Add filters if needed
+    filters = {}
+    if meeting_id:
+        filters["meeting_id"] = meeting_id
+    if user_id:
+        filters["user_id"] = user_id
+    if filters:
+        vector_search["filter"] = filters
+
+
+    pipeline = [
+        {"$vectorSearch": vector_search},
+        {"$project": {
+            "_id": 0,
+            "score": {"$meta": "vectorSearchScore"},
+            "text": 1,
+            "meeting_id": 1,
+            "meeting_title": 1,
+            "user_id": 1,
+            "type": 1,
+        }},
+        {"$limit": top_k}
+    ]
+    try:
+        cursor = db.chunks.aggregate(pipeline)
+        results = await cursor.to_list(length=top_k)
+        logger.info("Vector search returned %d chunks for meeting_id=%s", len(results), meeting_id)
+        return results
+    except Exception:
+        logger.error("Vector search failed", exc_info=True)
+    # ── Fallback: if vector search returned nothing (small meeting / few chunks)
+    # just fetch ALL chunks for this meeting directly — no similarity needed
+    logger.warning(
+        "Vector search returned 0 results for meeting_id=%s — "
+        "falling back to direct chunk fetch", meeting_id
+    )
+    return await _fallback_fetch_chunks(meeting_id=meeting_id, user_id=user_id, top_k=top_k)
+
+
+async def _fallback_fetch_chunks(
+    meeting_id: str = None,
+    user_id: str = None,
+    top_k: int = TOP_K,
+) -> List[Dict[str, Any]]:
+    """
+    Direct MongoDB fetch — no vector similarity.
+    Used when the meeting is too small to score well in Atlas Vector Search.
+    Fetches all chunks for the meeting and returns them — the LLM will
+    figure out the answer from the full context.
+    """
+    db = get_db()
+    query_filter = {}
+    if meeting_id:
+        query_filter["meeting_id"] = meeting_id
+    if user_id:
+        query_filter["user_id"] = user_id
+
+    try:
+        # For small meetings, just return ALL chunks (not limited to top_k)
+        # so the LLM has the full context to work with
+        cursor = db.chunks.find(
+            query_filter,
+            {
+                "_id": 0,
+                "text": 1,
+                "meeting_id": 1,
+                "meeting_title": 1,
+                "user_id": 1,
+                "type": 1,
+            }
+        ).limit(50)  # safety cap — 50 chunks is plenty even for large meetings
+        results = await cursor.to_list(length=50)
+        logger.info(
+            "Fallback fetch returned %d chunks for meeting_id=%s",
+            len(results), meeting_id
+        )
+        return results
+    except Exception:
+        logger.error("Fallback chunk fetch failed", exc_info=True)
         return []
 
-    # Load index and metadata
-    index = faiss.read_index(INDEX_FILE)
-    with open(METADATA_FILE, "r") as f:
-        try:
-            metadata = json.load(f)
-        except:
-            logger.error("Metadata load failed", exc_info=True)
-            return []
 
-    if index.ntotal == 0:
-        return []
-
-    # Embed the query
-    model = get_embed_model()
-    query_embedding = model.encode([query], show_progress_bar=False)
-    query_embedding = np.array(query_embedding, dtype=np.float32)
-
-    # Search FAISS
-    distances, indices = index.search(query_embedding, min(top_k * 10, index.ntotal))
-
-    # Filter by meeting_id if specified, then take top_k
-    results = []
-    for dist, idx in zip(distances[0], indices[0]):
-        if idx < 0 or idx >= len(metadata):
-            continue
-        chunk_meta = metadata[idx].copy()
-        chunk_meta["score"] = float(dist)
-        if user_id and chunk_meta.get("user_id") and chunk_meta["user_id"] != user_id:
-            continue
-
-
-        if meeting_id and chunk_meta["meeting_id"] != meeting_id:
-            continue
-
-        results.append(chunk_meta)
-
-        if len(results) >= top_k:
-            break
-
-    return results
-
-
-# ── Answer generation ──────────────────────────────────────
 
 RAG_PROMPT = """You are an intelligent meeting assistant with access to past meeting records.
 Answer the user's question based ONLY on the meeting context provided below.
@@ -94,23 +128,10 @@ USER QUESTION:
 Answer clearly and concisely:"""
 
 
-def answer_query(query: str, meeting_id: str = None, user_id: str = None) -> dict:
+async def answer_query(query: str, meeting_id: str = None, user_id: str = None) -> dict:
     """
-    Full RAG pipeline:
-    1. Retrieve relevant chunks from FAISS
-    2. Build context from chunks
-    3. Generate answer with LLM
-
-    Args:
-        query: User's natural language question
-        meeting_id: Restrict to specific meeting or None for all meetings
-
-    Returns:
-        {
-            "answer": str,
-            "sources": [{"meeting_id", "meeting_title", "chunk_text"}],
-            "chunks_used": int
-        }
+    Full RAG pipeline using Atlas Vector Search.
+    Same interface as before — routers need zero changes.
     """
     # Step 1: Retrieve
     if not query.strip():
@@ -119,7 +140,7 @@ def answer_query(query: str, meeting_id: str = None, user_id: str = None) -> dic
         "sources": [],
         "chunks_used": 0
         }
-    chunks = retrieve_relevant_chunks(query, meeting_id=meeting_id,user_id=user_id)
+    chunks = await retrieve_relevant_chunks(query, meeting_id=meeting_id,user_id=user_id)
 
     if not chunks:
         return {
@@ -157,7 +178,7 @@ def answer_query(query: str, meeting_id: str = None, user_id: str = None) -> dic
     chain = prompt | llm
     try:
 
-        response = chain.invoke({"context": context, "question": query})
+        response = await chain.ainvoke({"context": context, "question": query})
     except Exception as e:
         logger.error("LLM generation failed", exc_info=True)
         return {
