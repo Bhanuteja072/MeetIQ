@@ -67,15 +67,15 @@ langgraph-checkpoint==4.0.1
 langgraph-prebuilt==1.0.9
 groq==0.37.1
 
-# Search / Embeddings
-faiss-cpu==1.13.2
-sentence-transformers==2.7.0
-transformers==4.40.2
-tokenizers==0.19.1
-safetensors==0.7.0
-numpy>=2.0
-scipy==1.17.1
-scikit-learn==1.8.0
+# # Search / Embeddings
+# faiss-cpu==1.13.2
+# sentence-transformers==2.7.0
+# transformers==4.40.2
+# tokenizers==0.19.1
+# safetensors==0.7.0
+# numpy>=2.0
+# scipy==1.17.1
+# scikit-learn==1.8.0
 
 # Auth
 python-jose==3.5.0
