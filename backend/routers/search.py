@@ -1,4 +1,4 @@
-import logging, asyncio
+import logging
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query, Depends
@@ -37,7 +37,7 @@ async def search_meetings(request: SearchRequest, current_user: dict = Depends(g
     logger.info("Search query: '%s' | meeting_id: %s", request.query, request.meeting_id)
     try:
 
-        result = answer_query(
+        result = await answer_query(
             query=request.query,
             meeting_id=request.meeting_id,
             user_id=current_user["_id"]
@@ -97,14 +97,13 @@ async def search_within_meeting(
                 {"_id": meeting_id},
                 {"$set": {"embedding_status": "embedding"}}
             )
-            await asyncio.to_thread(
-                embed_meeting,
+            await embed_meeting(
                 meeting_id=meeting_id,
                 transcript=meeting.get("transcript", []),
                 report=report,
                 meeting_title=meeting.get("title", ""),
                 user_id=current_user["_id"],
-                )
+            )
             await db.meetings.update_one(
                 {"_id": meeting_id},
                 {"$set": {"embedding_status": "completed"}}
@@ -119,7 +118,7 @@ async def search_within_meeting(
 
     try:
 
-        result = answer_query(query=q, meeting_id=meeting_id, user_id=current_user["_id"])
+        result = await answer_query(query=q, meeting_id=meeting_id, user_id=current_user["_id"])
     except Exception as e:
         logger.error("Search failed", exc_info=True)
         raise HTTPException(status_code=500, detail="Search failed due to an internal error")

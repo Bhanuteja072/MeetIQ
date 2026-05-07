@@ -88,5 +88,5 @@ async def delete_meeting(meeting_id: str, current_user: dict = Depends(get_curre
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Meeting not found")
     # Remove from FAISS index too
-    remove_meeting_from_index(meeting_id)
+    await remove_meeting_from_index(meeting_id)
     return {"message": "Meeting deleted successfully"}
