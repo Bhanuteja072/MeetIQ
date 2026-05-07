@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     huggingface_token: str = Field("", validation_alias="HUGGINGFACE_TOKEN")
     assemblyai_api_key: str = Field("", validation_alias="ASSEMBLYAI_API_KEY")
     groq_api_key: str = Field("", validation_alias="GROQ_API_KEY")
+    jina_api_key: str = Field("", validation_alias="JINA_API_KEY")
     upload_dir: str = Field("/tmp/uploads", validation_alias="UPLOAD_DIR")
     max_file_size_mb: int = Field(200, validation_alias="MAX_FILE_SIZE_MB")
     jwt_secret: str = Field("", validation_alias="JWT_SECRET")
