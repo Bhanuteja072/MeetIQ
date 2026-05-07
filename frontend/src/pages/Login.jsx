@@ -19,7 +19,7 @@ export default function Login() {
       const data = await loginUser({ email, password })
       login(data.access_token, data.user)
       toast.success(`Welcome back, ${data.user.full_name || data.user.email}!`)
-      navigate('/')
+      navigate('/upload')
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Login failed')
     } finally {
