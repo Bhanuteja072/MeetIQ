@@ -18,7 +18,7 @@ export default function App() {
       <AuthProvider>              {/* ← moved UP, wraps everything including Navbar */}
         <Toaster position="top-right" />
         <Navbar />
-        <main style={{ maxWidth: 960, margin: '0 auto', padding: '32px 16px' }}>
+        <main style={{ maxWidth: 960, margin: '0 auto', padding: '24px 16px' }}>
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />

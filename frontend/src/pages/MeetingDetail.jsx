@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback , useRef} from 'react'
 import { useParams } from 'react-router-dom'
 import {
   getMeeting, getReport, triggerAnalysis,
@@ -10,7 +10,6 @@ import toast from 'react-hot-toast'
 import { Zap, Search, RefreshCw, Edit2, Check, X } from 'lucide-react'
 
 // ── Small sub-components ──────────────────────────────────
-
 function Section({ title, children }) {
   return (
     <div style={{
@@ -175,16 +174,24 @@ function TranscriptionProgress({ seconds }) {
 export default function MeetingDetail() {
   const { id } = useParams()
   const [meeting, setMeeting] = useState(null)
+  const chatBottomRef = useRef(null)  // ✅ move it here, line ~176
   const [report, setReport] = useState(null)
   const [analysisStatus, setAnalysisStatus] = useState(null)
   const [polling, setPolling] = useState(false)
   const [tab, setTab] = useState('report')  // 'report' | 'transcript' | 'search'
+  // const [searchQuery, setSearchQuery] = useState('')
+  // const [searchResult, setSearchResult] = useState(null)
+  // const [searching, setSearching] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [searchResult, setSearchResult] = useState(null)
+  const [chatHistory, setChatHistory] = useState([])  // [{role, content}]
   const [searching, setSearching] = useState(false)
   const [editingSpeaker, setEditingSpeaker] = useState(null)
   const [speakerName, setSpeakerName] = useState('')
   const [transcribeSeconds, setTranscribeSeconds] = useState(0)
+
+  useEffect(() => {
+    chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [chatHistory, searching])
 
   const loadMeeting = useCallback(async () => {
     try {
@@ -288,15 +295,20 @@ export default function MeetingDetail() {
       toast.error('Please enter a question')
       return
     }
-
-    setSearchQuery(normalizedQuery)
+    setChatHistory(prev => [...prev, { role: 'user', content: normalizedQuery }])
+    setSearchQuery('')  // clear input right away like a chatbot
     setSearching(true)
-    setSearchResult(null)
+    // setSearchQuery(normalizedQuery)
+    // setSearching(true)
+    // setSearchResult(null)
 
     try {
       const result = await searchWithinMeeting(id, normalizedQuery)
-      setSearchResult(result)
+      // Add assistant answer
+      setChatHistory(prev => [...prev, { role: 'assistant', content: result.answer, chunks_used: result.chunks_used }])
+      // setSearchResult(result)
     } catch (err) {
+      setChatHistory(prev => [...prev, { role: 'assistant', content: 'Search failed. Please try again.', chunks_used: 0 }])
       toast.error(err.response?.data?.detail || 'Search failed')
     } finally {
       setSearching(false)
@@ -324,7 +336,6 @@ export default function MeetingDetail() {
     'What decisions were made?',
     'What are the action items?',
     'What blockers were discussed?',
-    'Summarize this meeting in 5 points',
   ]
 
 
@@ -538,66 +549,96 @@ export default function MeetingDetail() {
       )}
 
       {tab === 'search' && (
-        <div>
-          <div style={{
-            background: '#1e293b', borderRadius: 10, padding: '10px 12px',
-            border: '1px solid #334155', marginBottom: 12
-          }}>
-            <p style={{ color: '#94a3b8', fontSize: 13, margin: 0 }}>
-              Searching within this meeting only (ID: {visibleMeetingId})
-            </p>
-          </div>
+            <div>
+              <div style={{ background: '#1e293b', borderRadius: 10, padding: '10px 12px',
+                border: '1px solid #334155', marginBottom: 12 }}>
+                <p style={{ color: '#94a3b8', fontSize: 13, margin: 0 }}>
+                  Searching within this meeting only (ID: {visibleMeetingId})
+                </p>
+              </div>
 
-          <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
-            <input
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleSearch()}
-              placeholder="Ask anything about this meeting..."
-              style={{
-                flex: 1, padding: '10px 14px', borderRadius: 10,
-                background: '#1e293b', border: '1px solid #334155',
-                color: '#f1f5f9', fontSize: 15, outline: 'none'
-              }}
-            />
-            <button onClick={handleSearch} disabled={searching} style={{
-              display: 'inline-flex', alignItems: 'center', gap: 6,
-              background: searching ? '#334155' : '#6366f1', color: '#fff', border: 'none',
-              padding: '10px 16px', borderRadius: 10, cursor: searching ? 'not-allowed' : 'pointer'
-            }}>
-              {searching ? <RefreshCw size={16} className="spin" /> : <Search size={18} />}
-              {searching ? 'Searching...' : 'Ask'}
-            </button>
-          </div>
+              {/* Chat history */}
+              {chatHistory.length === 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
+                  {quickQuestions.map(ex => (
+                    <button key={ex} onClick={() => handleSearch(ex)} style={{
+                      background: '#1e293b', border: '1px solid #334155',
+                      color: '#64748b', borderRadius: 999, padding: '6px 14px',
+                      fontSize: 13, cursor: 'pointer'
+                    }}>
+                      {ex}
+                    </button>
+                  ))}
+                </div>
+              )}
 
-          {!searchResult && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
-              {quickQuestions.map(ex => (
-                <button key={ex} onClick={() => handleSearch(ex)} style={{
-                  background: '#1e293b', border: '1px solid #334155',
-                  color: '#64748b', borderRadius: 999, padding: '6px 14px',
-                  fontSize: 13, cursor: 'pointer'
+              <div style={{ maxHeight: 420, overflowY: 'auto', marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {chatHistory.map((msg, i) => (
+                  <div key={i} style={{
+                    display: 'flex',
+                    justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start'
+                  }}>
+                    <div style={{
+                      maxWidth: '80%',
+                      background: msg.role === 'user' ? '#6366f1' : '#1e293b',
+                      color: msg.role === 'user' ? '#fff' : '#cbd5e1',
+                      borderRadius: msg.role === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+                      padding: '10px 14px',
+                      fontSize: 14,
+                      lineHeight: 1.6,
+                      border: msg.role === 'assistant' ? '1px solid #334155' : 'none'
+                    }}>
+                      {msg.content}
+                      {msg.role === 'assistant' && msg.chunks_used > 0 && (
+                        <p style={{ color: '#475569', fontSize: 12, margin: '6px 0 0' }}>
+                          Based on {msg.chunks_used} relevant passages
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+
+                {/* Typing indicator */}
+                {searching && (
+                  <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                    <div style={{
+                      background: '#1e293b', border: '1px solid #334155',
+                      borderRadius: '16px 16px 16px 4px', padding: '10px 16px',
+                      color: '#6366f1', fontSize: 13
+                    }}>
+                      Thinking...
+                    </div>
+                  </div>
+                )}
+                {/* ✅ Ref is here — after ALL messages, outside the map */}
+                <div ref={chatBottomRef} />
+              </div>
+
+              {/* Input */}
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && !searching && handleSearch()}
+                  placeholder="Ask anything about this meeting..."
+                  disabled={searching}
+                  style={{
+                    flex: 1, padding: '10px 14px', borderRadius: 10,
+                    background: '#1e293b', border: '1px solid #334155',
+                    color: '#f1f5f9', fontSize: 15, outline: 'none',
+                    opacity: searching ? 0.6 : 1
+                  }}
+                />
+                <button onClick={() => handleSearch()} disabled={searching} style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  background: searching ? '#334155' : '#6366f1', color: '#fff', border: 'none',
+                  padding: '10px 16px', borderRadius: 10, cursor: searching ? 'not-allowed' : 'pointer'
                 }}>
-                  {ex}
+                  {searching ? <RefreshCw size={16} className="spin" /> : <Search size={18} />}
                 </button>
-              ))}
+              </div>
             </div>
           )}
-
-          {searchResult && (
-            <Section title="Answer">
-              <p style={{ color: '#cbd5e1', lineHeight: 1.7, marginBottom: 16 }}>
-                {searchResult.answer}
-              </p>
-              {searchResult.sources?.length > 0 && (
-                <p style={{ color: '#475569', fontSize: 13 }}>
-                  Based on {searchResult.chunks_used} relevant passages from this meeting
-                </p>
-              )}
-            </Section>
-          )}
-        </div>
-      )}
     </div>
   )
 }
