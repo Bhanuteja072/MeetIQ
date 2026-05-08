@@ -261,6 +261,75 @@ export default function Landing() {
         </div>
       </section>
 
+{/* Limitations / Honest Notes */}
+<section style={{ padding: '0 24px 80px', maxWidth: 900, margin: '0 auto' }}>
+  <p style={{
+    textAlign: 'center', color: '#f59e0b', fontSize: 12,
+    fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 16,
+  }}>
+    Good to know
+  </p>
+  <h2 style={{
+    textAlign: 'center', fontFamily: "'Syne', sans-serif",
+    fontSize: 'clamp(24px, 3vw, 34px)', fontWeight: 800,
+    letterSpacing: '-1px', marginBottom: 40, color: '#f1f5f9',
+  }}>
+    A few honest notes
+  </h2>
+
+  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 16 }}>
+    
+    {/* Free tier cold start */}
+    <div style={{
+      background: '#1e293b', borderRadius: 14, padding: '22px 24px',
+      border: '1px solid #854d0e',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+        <span style={{ fontSize: 18 }}>⏳</span>
+        <p style={{ color: '#fbbf24', fontWeight: 700, fontSize: 14 }}>Cold Start Delay</p>
+      </div>
+      <p style={{ color: '#94a3b8', fontSize: 13, lineHeight: 1.7 }}>
+        The backend runs on <strong style={{ color: '#f1f5f9' }}>Render's free tier</strong> and spins down after 15 minutes of inactivity.
+        First request may take <strong style={{ color: '#f1f5f9' }}>30–60 seconds</strong> to wake up. Just wait a moment and try again.
+      </p>
+    </div>
+
+    {/* Search limitation */}
+    <div style={{
+      background: '#1e293b', borderRadius: 14, padding: '22px 24px',
+      border: '1px solid #1e3a5f',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+        <span style={{ fontSize: 18 }}>🔍</span>
+        <p style={{ color: '#60a5fa', fontWeight: 700, fontSize: 14 }}>Search is Keyword-Based</p>
+      </div>
+      <p style={{ color: '#94a3b8', fontSize: 13, lineHeight: 1.7 }}>
+        Search uses <strong style={{ color: '#f1f5f9' }}>MongoDB Atlas Search</strong> (BM25) instead of vector embeddings.
+        It works well for direct keywords but won't match synonyms or paraphrased questions the way 
+        SentenceTransformers would. Search with specific words from the meeting for best results.
+      </p>
+    </div>
+
+    {/* Why Atlas Search */}
+    <div style={{
+      background: '#1e293b', borderRadius: 14, padding: '22px 24px',
+      border: '1px solid #14532d',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+        <span style={{ fontSize: 18 }}>💡</span>
+        <p style={{ color: '#4ade80', fontWeight: 700, fontSize: 14 }}>Why Atlas Search?</p>
+      </div>
+      <p style={{ color: '#94a3b8', fontSize: 13, lineHeight: 1.7 }}>
+        SentenceTransformers require significant RAM to run embedding models on the server.
+        On a free-tier deployment, this causes crashes. Atlas Search gives 
+        <strong style={{ color: '#f1f5f9' }}> reliable full-text search</strong> with zero extra infrastructure — a deliberate tradeoff for stability.
+      </p>
+    </div>
+
+  </div>
+</section>
+
+
       {/* CTA Banner */}
       <section style={{ padding: '80px 24px' }}>
         <div style={{

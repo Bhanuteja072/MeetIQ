@@ -248,6 +248,66 @@ export default function Docs() {
           ))}
         </div>
 
+        
+      {/* Known Limitations */}
+      <div className="doc-section">
+        <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: 26, fontWeight: 800, letterSpacing: '-0.5px', marginBottom: 8 }}>
+          Known limitations
+        </h2>
+        <p style={{ color: '#475569', fontSize: 14, marginBottom: 32 }}>
+          This app runs on free-tier infrastructure. Here's what that means for you.
+        </p>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+
+          <div style={{ background: '#1e293b', borderRadius: 12, padding: '20px 24px', border: '1px solid #854d0e' }}>
+            <p style={{ color: '#fbbf24', fontWeight: 700, fontSize: 14, marginBottom: 6 }}>
+              ⏳ Backend cold start (30–60 seconds)
+            </p>
+            <p style={{ color: '#64748b', fontSize: 13, lineHeight: 1.7 }}>
+              The backend is hosted on Render's free tier, which shuts the server down after 15 minutes of inactivity.
+              When you visit after a period of no use, the first API call (login, upload, etc.) will take 30–60 seconds to respond
+              while the server wakes up. This is normal — just wait and retry.
+            </p>
+          </div>
+
+          <div style={{ background: '#1e293b', borderRadius: 12, padding: '20px 24px', border: '1px solid #1e3a5f' }}>
+            <p style={{ color: '#60a5fa', fontWeight: 700, fontSize: 14, marginBottom: 6 }}>
+              🔍 Search works best with specific keywords
+            </p>
+            <p style={{ color: '#64748b', fontSize: 13, lineHeight: 1.7 }}>
+              Search is powered by <strong style={{ color: '#94a3b8' }}>MongoDB Atlas Search (BM25)</strong> — a keyword-based full-text search engine.
+              It matches exact or close words from the transcript. It won't understand synonyms or semantically similar phrases
+              the way a vector embedding model (like SentenceTransformers) would.
+              For best results, use words that were actually said in the meeting.
+            </p>
+          </div>
+
+          <div style={{ background: '#1e293b', borderRadius: 12, padding: '20px 24px', border: '1px solid #14532d' }}>
+            <p style={{ color: '#4ade80', fontWeight: 700, fontSize: 14, marginBottom: 6 }}>
+              💡 Why not use SentenceTransformers?
+            </p>
+            <p style={{ color: '#64748b', fontSize: 13, lineHeight: 1.7 }}>
+              Running SentenceTransformer embedding models requires loading a 200–400MB model into server RAM on every cold start.
+              On Render's free tier (512MB RAM), this consistently caused out-of-memory crashes during deployment.
+              Atlas Search was chosen as a stable, zero-infrastructure alternative that works reliably within free-tier constraints —
+              a deliberate engineering tradeoff, not a limitation of the design.
+            </p>
+          </div>
+
+          <div style={{ background: '#1e293b', borderRadius: 12, padding: '20px 24px', border: '1px solid #334155' }}>
+            <p style={{ color: '#94a3b8', fontWeight: 700, fontSize: 14, marginBottom: 6 }}>
+              📁 File size limit: 100MB
+            </p>
+            <p style={{ color: '#64748b', fontSize: 13, lineHeight: 1.7 }}>
+              The frontend enforces a 100MB upload limit. For longer recordings, compress your audio to MP3 first
+              (most 1-hour meetings compress well under 100MB at standard bitrates).
+            </p>
+          </div>
+
+        </div>
+      </div>
+
         {/* Tech Stack */}
         <div className="doc-section">
           <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: 26, fontWeight: 800, letterSpacing: '-0.5px', marginBottom: 32 }}>
