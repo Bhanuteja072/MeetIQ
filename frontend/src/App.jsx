@@ -1,6 +1,6 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
-import { AuthProvider } from './auth/AuthContext'
+import { AuthProvider, useAuth } from './auth/AuthContext'
 import ProtectedRoute from './auth/ProtectedRoute'
 import Navbar from './components/Navbar'
 import Upload from './pages/Upload'
@@ -17,6 +17,12 @@ import Docs from './pages/Docs'
 // Pages that use their OWN nav (no shared Navbar/main wrapper)
 const PUBLIC_STANDALONE = ['/', '/docs', '/login', '/register', '/forgot-password']
 
+function RootRedirect() {
+  const { token, loading } = useAuth()
+  if (loading) return null
+  return token ? <Navigate to="/upload" replace /> : <Landing />
+}
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -24,7 +30,8 @@ export default function App() {
         <Toaster position="top-right" />
         <Routes>
           {/* ── Standalone public pages (have their own nav) ── */}
-          <Route path="/"                 element={<Landing />} />
+          <Route path="/" element={<RootRedirect />} />
+          {/* <Route path="/"                 element={<Landing />} /> */}
           <Route path="/docs"             element={<Docs />} />
           <Route path="/login"            element={<Login />} />
           <Route path="/register"         element={<Register />} />
