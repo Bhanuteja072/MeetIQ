@@ -13,7 +13,7 @@ and a React frontend.
 
 ---
 
-> **Live Demo:** Coming soon
+> **Live Demo:**   https://meetiq.me
 
 ---
 **Upload Page :**
