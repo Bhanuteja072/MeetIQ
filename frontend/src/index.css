@@ -1,13 +1,16 @@
+/* Import the responsive token system first — everything else builds on it */
+@import './styles/responsive.css';
 /* *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; } */
 *, *::before, *::after { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; overflow-x: hidden; }
 
 body {
-  background: #0f172a;
-  color: #f1f5f9;
+  background: var(--color-bg);
+  color: var(--color-text);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   min-height: 100vh;
 }
+
 
 
 /* Make images/videos never overflow */
