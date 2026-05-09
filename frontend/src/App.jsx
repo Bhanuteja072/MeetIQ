@@ -40,7 +40,13 @@ export default function App() {
           <Route path="/*" element={
             <>
               <Navbar />
-              <main style={{ maxWidth: 960, margin: '0 auto', padding: '24px 16px' }}>
+              {/* 
+                Replaced hardcoded inline style:
+                  { maxWidth: 960, margin: '0 auto', padding: '24px 16px' }
+                with .page-wrapper class from responsive.css which uses
+                --content-max and --page-px tokens that adapt per breakpoint.
+              */}
+              <main className="page-wrapper">
                 <Routes>
                   <Route path="/upload"        element={<ProtectedRoute><Upload /></ProtectedRoute>} />
                   <Route path="/archive"       element={<ProtectedRoute><Archive /></ProtectedRoute>} />
