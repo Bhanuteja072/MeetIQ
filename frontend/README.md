@@ -120,7 +120,7 @@ npm run lint     # Run ESLint
 
 ## Important Notes
 
-- Frontend currently blocks files larger than 50 MB on upload.
+- Frontend currently blocks files larger than 100 MB on upload.
 - Backend default max file size can be higher (configured separately).
 - Meeting IDs are normalized for scoped search to avoid whitespace issues.
 - Archive auto-refreshes periodically to show processing updates.
