@@ -493,7 +493,7 @@ curl "http://127.0.0.1:8000/search/meetings/<meeting_id>/search?q=What decisions
 ### Frontend upload size mismatch
 
 - Backend max upload size is `MAX_FILE_SIZE_MB` (default 200 MB).
-- Frontend currently blocks files over 100 MB but shows an error text saying 50 MB.
+- Frontend currently blocks files over 100 MB.
 
 ## Development Notes
 
