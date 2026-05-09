@@ -30,7 +30,7 @@ export default function Upload() {
     if (!file) return toast.error('Please select a file')
     if (!title.trim()) return toast.error('Please enter a title')
     if (file.size > 100 * 1024 * 1024) {
-    return toast.error('File too large (max 50MB)')
+    return toast.error('File too large (max 100MB)')
     }
 
     setLoading(true)
@@ -67,7 +67,7 @@ export default function Upload() {
         {[['audio', 'Audio / Video', FileAudio], ['transcript', 'Transcript', FileText]].map(
           ([val, label, Icon]) => (
             <button key={val} onClick={() => setMode(val)} style={{
-              flex: 1, padding: '10px 0', borderRadius: 10, border: 'none',
+              flex: 1, padding: '10px 0', minHeight: 44, borderRadius: 10, border: 'none',
               cursor: 'pointer', display: 'flex', alignItems: 'center',
               justifyContent: 'center', gap: 6, fontWeight: 600, fontSize: 14,
               background: mode === val ? '#6366f1' : '#1e293b',
@@ -100,7 +100,7 @@ export default function Upload() {
         onDrop={handleDrop}
         style={{
           border: `2px dashed ${dragOver ? '#6366f1' : '#334155'}`,
-          borderRadius: 14, padding: '48px 24px', textAlign: 'center',
+          borderRadius: 14, padding: 'clamp(28px, 6vw, 48px) 24px', textAlign: 'center',
           cursor: 'pointer', marginBottom: 20,
           background: dragOver ? '#1e1b4b' : '#0f172a',
           transition: 'all 0.15s'

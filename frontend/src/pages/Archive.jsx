@@ -100,7 +100,10 @@ export default function Archive() {
                 <p style={{
                   color: '#f1f5f9',
                   fontWeight: 600,
-                  marginBottom: 4
+                  marginBottom: 4,
+                  overflow: 'hidden',
+                  whiteSpace: 'nowrap',
+                  textOverflow: 'ellipsis',
                 }}>
                   {m.title}
                 </p>
@@ -108,7 +111,8 @@ export default function Archive() {
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 12
+                  gap: 8,
+                  flexWrap: 'wrap'
                 }}>
                   <StatusBadge status={m.status} />
 
@@ -137,7 +141,9 @@ export default function Archive() {
                     border: 'none',
                     cursor: 'pointer',
                     color: '#ef4444',
-                    padding: 4
+                    padding: 8,
+                    minWidth: 36,
+                    minHeight: 36
                   }}
                 >
                   <Trash2 size={16} />

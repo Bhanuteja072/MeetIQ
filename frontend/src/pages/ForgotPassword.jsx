@@ -128,7 +128,7 @@ export default function ForgotPassword() {
   return (
     <div style={{
       minHeight: '100vh', display: 'flex', alignItems: 'center',
-      justifyContent: 'center', background: '#0f172a', padding: 24,
+      justifyContent: 'center', background: '#0f172a', padding: 'clamp(12px, 4vw, 24px)',
     }}>
       <div style={{ width: '100%', maxWidth: 420 }}>
 

@@ -4,6 +4,7 @@ import {
   getMeeting, getReport, triggerAnalysis,
   getTranscriptionStatus, renameSpeaker
 } from '../api/client'
+import { useIsMobile } from '../hooks/useIsMobile'
 import { searchWithinMeeting } from '../api/client'
 import StatusBadge from '../components/StatusBadge'
 import toast from 'react-hot-toast'
@@ -86,7 +87,7 @@ function TranscriptionProgress({ seconds }) {
   return (
     <div style={{
       background: '#1e293b', border: '1px solid #334155',
-      borderRadius: 12, padding: '28px 24px', maxWidth: 480
+      borderRadius: 12, padding: '28px 24px', maxWidth: 480,width: '100%'
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
         <div style={{
@@ -156,7 +157,7 @@ function TranscriptionProgress({ seconds }) {
       </div>
 
       <p style={{ color: '#475569', fontSize: 12, margin: 0, lineHeight: 1.6 }}>
-        Typical processing time is 1–3 min. You can leave this page and return anytime.
+        Typical processing time is 4-8 min. You can leave this page and return anytime.
       </p>
 
       <style>{`
@@ -188,6 +189,7 @@ export default function MeetingDetail() {
   const [editingSpeaker, setEditingSpeaker] = useState(null)
   const [speakerName, setSpeakerName] = useState('')
   const [transcribeSeconds, setTranscribeSeconds] = useState(0)
+  const { isMobile } = useIsMobile()
 
   useEffect(() => {
     chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -343,15 +345,15 @@ export default function MeetingDetail() {
     <div>
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
-          <h1 style={{ color: '#f1f5f9', fontSize: 26, fontWeight: 700 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8,flexWrap: 'wrap'}}>
+          <h1 style={{ color: '#f1f5f9', fontSize: 26, fontWeight: 700, minWidth: 0 }}>
             {meeting.title}
           </h1>
           <StatusBadge status={meeting.status} />
         </div>
         <div style={{
           display: 'flex', alignItems: 'center', flexWrap: 'wrap',
-          gap: 16, color: '#475569', fontSize: 14
+          gap: 8, color: '#475569', fontSize: 14
         }}>
           {meeting.duration && <span>⏱ {Math.floor(meeting.duration / 60)}m</span>}
           <span>👥 {meeting.speakers?.length || 0} speakers</span>
@@ -360,7 +362,7 @@ export default function MeetingDetail() {
             display: 'inline-flex', alignItems: 'center', gap: 6,
             background: '#1e293b', border: '1px solid #334155',
             borderRadius: 999, padding: '2px 10px',
-            color: '#94a3b8', fontSize: 12
+            color: '#94a3b8',fontSize: 12, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>
             ID: {visibleMeetingId}
           </span>
@@ -392,8 +394,8 @@ export default function MeetingDetail() {
       <div style={{ display: 'flex', gap: 4, marginBottom: 20 }}>
         {tabs.map(t => (
           <button key={t} onClick={() => setTab(t)} style={{
-            padding: '8px 18px', borderRadius: 8, border: 'none',
-            cursor: 'pointer', fontWeight: 600, fontSize: 14, textTransform: 'capitalize',
+            padding: isMobile ? '8px 10px' : '8px 18px', borderRadius: 8, border: 'none',
+            cursor: 'pointer', fontWeight: 600, fontSize: isMobile ? 13 : 14, textTransform: 'capitalize',
             background: tab === t ? '#6366f1' : '#1e293b',
             color: tab === t ? '#fff' : '#64748b',
           }}>
@@ -449,7 +451,11 @@ export default function MeetingDetail() {
       {tab === 'report' && !report && (
         <div style={{ color: '#475569', textAlign: 'center', padding: '48px 0' }}>
           {meeting.status !== 'completed'
-            ? <TranscriptionProgress seconds={transcribeSeconds} />
+            ? (
+              <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+                <TranscriptionProgress seconds={transcribeSeconds} />
+              </div>
+            )
             : 'Click "Run AI Analysis" to generate the report'}
         </div>
       )}
@@ -534,7 +540,7 @@ export default function MeetingDetail() {
                   <span style={{ color: '#475569', fontSize: 12, minWidth: 44, paddingTop: 2 }}>
                     {String(mins).padStart(2,'0')}:{String(secs).padStart(2,'0')}
                   </span>
-                  <div>
+                  <div style={{ minWidth: 0 }}>
                     <span style={{
                       color: '#6366f1', fontWeight: 600, fontSize: 13, marginBottom: 4,
                       display: 'block'
@@ -563,8 +569,8 @@ export default function MeetingDetail() {
                   {quickQuestions.map(ex => (
                     <button key={ex} onClick={() => handleSearch(ex)} style={{
                       background: '#1e293b', border: '1px solid #334155',
-                      color: '#64748b', borderRadius: 999, padding: '6px 14px',
-                      fontSize: 13, cursor: 'pointer'
+                      color: '#64748b', borderRadius: 999, padding: '6px 10px',
+                      fontSize: 12, maxWidth: '100%', cursor: 'pointer'
                     }}>
                       {ex}
                     </button>

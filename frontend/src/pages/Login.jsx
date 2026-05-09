@@ -30,10 +30,10 @@ export default function Login() {
   return (
     <div style={{
       minHeight: '100vh', display: 'flex', alignItems: 'center',
-      justifyContent: 'center', background: '#0f172a'
+      justifyContent: 'center', background: '#0f172a',padding: '24px 16px'
     }}>
       <div style={{
-        background: '#1e293b', borderRadius: 16, padding: 40,
+        background: '#1e293b', borderRadius: 16, padding: 'clamp(24px, 5vw, 40px)',
         width: '100%', maxWidth: 400, border: '1px solid #334155'
       }}>
         <h1 style={{ color: '#f1f5f9', fontSize: 24, fontWeight: 700, marginBottom: 8 }}>

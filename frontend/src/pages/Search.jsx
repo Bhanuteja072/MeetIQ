@@ -65,14 +65,14 @@ export default function Search() {
       <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
         <button onClick={() => setMode('global')} style={{
           background: mode === 'global' ? '#6366f1' : '#1e293b',
-          color: '#fff', padding: '6px 12px', borderRadius: 8, border: 'none'
+          color: '#fff', padding: '10px 16px', minHeight: 44, borderRadius: 8, border: 'none'
         }}>
           Global
         </button>
 
         <button onClick={() => setMode('meeting')} style={{
           background: mode === 'meeting' ? '#6366f1' : '#1e293b',
-          color: '#fff', padding: '6px 12px', borderRadius: 8, border: 'none'
+          color: '#fff', padding: '10px 16px', minHeight: 44, borderRadius: 8, border: 'none'
         }}>
           Specific Meeting
         </button>
@@ -126,7 +126,7 @@ export default function Search() {
             <button key={ex} onClick={() => handleSearch(ex)} style={{
               background: '#1e293b', border: '1px solid #334155',
               color: '#64748b', borderRadius: 999, padding: '6px 14px',
-              fontSize: 13, cursor: 'pointer'
+              fontSize: 13, maxWidth: '100%',cursor: 'pointer'
             }}>
               {ex}
             </button>
