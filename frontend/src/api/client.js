@@ -1,7 +1,14 @@
 import axios from 'axios'
 
+// const api = axios.create({
+//   baseURL: `${import.meta.env.VITE_API_URL || ''}/api`,
+//   timeout: 120000,
+// })
+
 const api = axios.create({
-  baseURL: `${import.meta.env.VITE_API_URL || ''}/api`,
+  baseURL: import.meta.env.VITE_API_URL
+    ? `${import.meta.env.VITE_API_URL}/api`
+    : 'https://meetiq-1-n0oi.onrender.com/api',
   timeout: 120000,
 })
 
