@@ -1,12 +1,13 @@
 import axios from 'axios'
+//Main
+// const api = axios.create({
+//   baseURL: `${import.meta.env.VITE_API_URL || ''}/api`,
+//   timeout: 120000,
+// })
 const api = axios.create({
   baseURL: `${import.meta.env.VITE_API_URL || ''}/api`,
   timeout: 120000,
 })
-// const api = axios.create({
-//   baseURL: 'https://meetiq-1-n0oi.onrender.com/api',
-//   timeout: 120000,
-// })
 
 // ── Interceptor: attach JWT to every request ──────────────
 api.interceptors.request.use((config) => {
