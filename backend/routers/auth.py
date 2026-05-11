@@ -116,6 +116,16 @@ async def login(body: UserLogin):
         )
     )
 
+async def _send_otp_task(email: str, otp: str, full_name: str):
+    try:
+        success = send_otp_email(to_email=email, otp=otp, full_name=full_name)
+        if not success:
+            logger.error("EMAIL FAILED for %s — send_otp_email returned False", email)
+        else:
+            logger.info("EMAIL SUCCESS for %s", email)
+    except Exception as e:
+        logger.exception("EMAIL CRASHED for %s: %s", email, e)
+
 @router.post("/forgot-password")
 async def forgot_password(request: Request, background_tasks: BackgroundTasks):
     """
@@ -137,10 +147,10 @@ async def forgot_password(request: Request, background_tasks: BackgroundTasks):
         if user:
             otp = await create_otp(email)
             background_tasks.add_task(
-                send_otp_email,
-                to_email=email,
-                otp=otp,
-                full_name=user.get("full_name", "")
+                _send_otp_task,
+                email,
+                otp,
+                user.get("full_name", "")
             )
             logger.info(
                 "Password reset OTP generated for %s",
