@@ -93,3 +93,5 @@ export const searchMeetings = (query, meetingId = null) =>
 
 export const searchWithinMeeting = (meetingId, query) =>
   api.get(`/search/meetings/${encodeURIComponent((meetingId || '').trim())}/search`, { params: { q: query } }).then(r => r.data)
+
+export { api }
