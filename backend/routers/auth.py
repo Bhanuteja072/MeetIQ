@@ -1,10 +1,9 @@
 # backend/routers/auth.py
 import uuid, secrets, re, logging
-from fastapi import APIRouter, HTTPException, logger, status, Depends, Request, BackgroundTasks
+from fastapi import APIRouter, HTTPException, status, Depends, Request, BackgroundTasks
 from config import settings
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
-from fastapi import APIRouter, HTTPException, status, Depends
 from jose import jwt, JWTError
 from backend.databases.mongo import get_db
 from backend.models.user import UserCreate, UserLogin, TokenResponse, UserResponse
