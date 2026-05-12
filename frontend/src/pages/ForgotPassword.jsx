@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-// import axios from 'axios'
-import api from '../api/client'  // ← use the shared instance
+import { api } from '../api/client'
 import toast from 'react-hot-toast'
 // import { registerUser } from '../api/client'  // just to import the file isn't needed
 
